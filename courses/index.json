@@ -8,5 +8,10 @@
     "id": "emotions",
     "title": "Эмоциональная грамотность",
     "file": "emotional_literacy.json"
+  },
+  {
+    "id": "electrical_safety",
+    "title": "Электробезопасность в офисе",
+    "file": "electrical_safety.json"
   }
 ]
