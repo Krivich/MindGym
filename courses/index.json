@@ -1,0 +1,12 @@
+[
+  {
+    "id": "ta",
+    "title": "Взрослая коммуникация",
+    "file": "ta_scenarios.json"
+  },
+  {
+    "id": "emotions",
+    "title": "Эмоциональная грамотность",
+    "file": "emotional_literacy.json"
+  }
+]
