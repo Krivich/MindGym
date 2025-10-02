@@ -56,9 +56,9 @@ class LLMClient {
                 },
                 body: JSON.stringify({
                     model: 'qwen/qwen3-8b:free',
-                    messages: [{ role: 'user', content: fullPrompt }],
+                    messages: [{ role: 'user', content: fullPrompt + " . Ты обязан ответить ТОЛЬКО валидным JSON. Никаких пояснений, рассуждений, вводных фраз." }],
                     temperature: 0.3,
-                    max_tokens: 500
+                    max_tokens: 1500
                 }),
                 signal
             });
