@@ -23,14 +23,15 @@
     <link id="seo-alternate-placeholder" rel="alternate" href="#" />
 
     <style>
-        /* Замените весь ваш <style> на это */
-
         :root {
             --bg: #ffffff;
             --text: #111111;
             --text-light: #666666;
             --primary: #6c63ff;
+            --border: #e0e0e0;
             --card: #ffffff;
+            --user-bg: #e6e6ff;
+            --coach-bg: #f0f0f0;
             --shadow: 0 10px 40px rgba(0,0,0,0.05);
             --focus-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
         }
@@ -74,7 +75,7 @@
         input, select {
             width: 100%;
             padding: 10px 14px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border);
             border-radius: 12px;
             font-size: 15px;
             background: var(--card);
@@ -107,7 +108,7 @@
             display: block;
         }
 
-        /* === Лендинг — модный, воздушный === */
+        /* === Лендинг === */
         .landing {
             background: var(--card);
             border-radius: 24px;
@@ -183,18 +184,16 @@
             color: var(--text);
         }
 
-        /*.benefits li::before {*/
-        /*    content: '✨';*/
-        /*    position: absolute;*/
-        /*    left: 0;*/
-        /*    top: 2px;*/
-        /*    font-size: 18px;*/
-        /*    width: 24px;*/
-        /*    height: 24px;*/
-        /*    display: flex;*/
-        /*    align-items: center;*/
-        /*    justify-content: center;*/
-        /*}*/
+        .benefits li::before {
+            content: '🧠';
+            position: absolute;
+            left: 0;
+            top: 2px;
+            font-size: 18px;
+        }
+
+        .benefits li:nth-child(2)::before { content: '💬'; }
+        .benefits li:nth-child(3)::before { content: '🌱'; }
 
         .scope {
             font-size: 18px;
@@ -227,14 +226,155 @@
             margin: 0;
         }
 
-        /* === Параллакс — рабочий === */
+        /* === Чат === */
+        .chat-container {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 180px);
+            padding: 16px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 8px 0;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+        }
+
+        .message.coach {
+            justify-content: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+            max-width: 80%;
+            word-wrap: break-word;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+        }
+
+        .message.coach .message-bubble {
+            background: var(--coach-bg);
+            border-top-left-radius: 4px;
+        }
+
+        .message.user .message-bubble {
+            background: var(--user-bg);
+            color: var(--primary);
+            border-top-right-radius: 4px;
+        }
+
+        .thinking {
+            color: var(--text-light);
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .timer {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-left: 4px;
+        }
+
+        /* Заголовок темы */
+        .module-header {
+            text-align: center;
+            margin: 24px 0;
+            width: 100%;
+        }
+        .module-title {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+        .module-description {
+            font-size: 14px;
+            color: var(--text-light);
+            font-style: italic;
+        }
+        .module-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 12px auto;
+            width: 60px;
+        }
+
+        /* Ввод */
+        .chat-input {
+            display: flex;
+            gap: 12px;
+            padding-top: 16px;
+            align-items: center;
+        }
+
+        .chat-input textarea {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            resize: none;
+            font-size: 15px;
+            min-height: 20px;
+            max-height: 100px;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .chat-input textarea:focus {
+            border-color: transparent;
+            box-shadow: var(--focus-shadow);
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .send-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Параллакс */
         .parallax-layer {
             position: absolute;
             border-radius: 50%;
             will-change: transform;
             z-index: 0;
         }
-
         .layer-0 {
             width: 300px;
             height: 300px;
@@ -242,7 +382,6 @@
             left: 5%;
             background: radial-gradient(circle, rgba(108, 99, 255, 0.08) 0%, transparent 70%);
         }
-
         .layer-1 {
             width: 200px;
             height: 200px;
@@ -250,7 +389,6 @@
             left: 75%;
             background: radial-gradient(circle, rgba(108, 99, 255, 0.05) 0%, transparent 70%);
         }
-
         .layer-2 {
             width: 150px;
             height: 150px;
@@ -279,6 +417,10 @@
             .benefits li::before {
                 position: static;
                 margin-right: 8px;
+            }
+            .chat-container {
+                height: calc(100vh - 160px);
+                padding: 12px;
             }
         }
     </style>
