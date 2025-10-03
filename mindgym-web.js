@@ -85,6 +85,55 @@ class LLMClient {
     }
 }
 
+function updateMetaTags(course = null) {
+    const baseUrl = 'https://krivich.github.io/MindGym';
+    let title, description, url;
+
+    if (course) {
+        // Страница курса
+        title = `${course.metadata.title} — MindGym`;
+        description = course.metadata.description || `Интерактивный курс по ${course.metadata.title.toLowerCase()}. Тренируйте навыки через диалог с ИИ.`;
+        const courseId = getCourseIdByFile(course.metadata._filename); // см. ниже
+        url = `${baseUrl}/${courseId}`;
+    } else {
+        // Главная страница
+        title = 'MindGym — Интерактивный тренажёр навыков';
+        description = 'Развивайте эмоциональный интеллект, коммуникацию, электробезопасность и другие навыки через диалог с ИИ. Open Source.';
+        url = baseUrl;
+    }
+
+    // Обновляем метатеги
+    document.title = title;
+    document.querySelector('meta[name="description"]').setAttribute('content', description);
+    document.querySelector('link[rel="canonical"]').setAttribute('href', url);
+
+    // Open Graph
+    document.querySelector('meta[property="og:title"]').setAttribute('content', title);
+    document.querySelector('meta[property="og:description"]').setAttribute('content', description);
+    document.querySelector('meta[property="og:url"]').setAttribute('content', url);
+}
+
+// Глобальная переменная для хранения списка курсов
+let courseIndex = [];
+
+// Получить ID курса по имени файла
+function getCourseIdByFile(filename) {
+    const entry = courseIndex.find(c => c.file === filename);
+    return entry ? entry.id : 'unknown';
+}
+
+// Получить имя файла по ID из URL
+function getCourseFileFromUrl() {
+    const path = window.location.pathname;
+    const parts = path.split('/');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart && lastPart !== 'MindGym' && lastPart !== '') {
+        const entry = courseIndex.find(c => c.id === lastPart);
+        return entry ? entry.file : null;
+    }
+    return null;
+}
+
 // === Чат-функции ===
 function addMessage(role, text, messageId = null) {
     const messageDiv = document.createElement('div');
@@ -166,10 +215,17 @@ async function sendMessage() {
 
         if (result.isCorrect) {
             addMessage('coach', '✅ Верно!');
+
             if (core.hasNext()) {
+                // Есть следующее упражнение в модуле
                 core.next();
                 setTimeout(showExercise, 800);
+            } else if (core.hasNextModule()) {
+                // Модуль завершён — переходим к следующему
+                core.nextModule();
+                setTimeout(showExercise, 800);
             } else {
+                // Весь курс завершён
                 addMessage('coach', '🎉 Курс завершён! Выберите новый курс.');
             }
         } else {
@@ -198,17 +254,21 @@ async function loadSelectedCourse() {
     const data = await res.json();
     core.loadCourse(data);
     courseTitle = data.metadata.title;
+    data.metadata._filename = file; // ← сохраняем имя файла
+    core.course = data; // убедитесь, что курс доступен глобально
 
     landing.style.display = 'none';
     chatContainer.style.display = 'flex';
     chatMessages.innerHTML = '';
     showExercise();
+    updateMetaTags(core.course);
 }
 
 // === Параллакс ===
 function initParallax() {
-    const container = document.querySelector('.parallax-container');
-    if (!container) return;
+    // Changed to listen on the 'landing' element instead of 'parallax-container'
+    const parallaxTarget = document.getElementById('landing');
+    if (!parallaxTarget) return;
 
     const layers = {
         layer0: document.querySelector('.layer-0'),
@@ -218,8 +278,9 @@ function initParallax() {
     const depth = { layer0: 0.02, layer1: 0.04, layer2: 0.06 };
     const sensitivity = 30;
 
-    container.addEventListener('mousemove', (e) => {
-        const rect = container.getBoundingClientRect();
+    parallaxTarget.addEventListener('mousemove', (e) => {
+        const rect = parallaxTarget.getBoundingClientRect();
+        // Calculate movement relative to the center of the landing element
         const moveX = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
         const moveY = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
 
@@ -232,7 +293,7 @@ function initParallax() {
         });
     });
 
-    container.addEventListener('mouseleave', () => {
+    parallaxTarget.addEventListener('mouseleave', () => {
         Object.values(layers).forEach(el => {
             if (el) el.style.transform = 'translate(0, 0)';
         });
@@ -265,17 +326,56 @@ userInput.addEventListener('keydown', (e) => {
 
 initParallax();
 
+function injectAlternateLinks() {
+    const baseUrl = 'https://krivich.github.io/MindGym';
+
+    // Удаляем старые alternate-ссылки (на случай повторного вызова)
+    document.querySelectorAll('link[rel="alternate"]').forEach(el => el.remove());
+
+    // Добавляем ссылку на главную
+    const mainLink = document.createElement('link');
+    mainLink.rel = 'alternate';
+    mainLink.href = baseUrl + '/';
+    document.head.appendChild(mainLink);
+
+    // Добавляем ссылки на все курсы
+    courseIndex.forEach(course => {
+        const link = document.createElement('link');
+        link.rel = 'alternate';
+        link.href = `${baseUrl}/${course.id}`;
+        document.head.appendChild(link);
+    });
+}
+
 (async () => {
+    // Загружаем индекс курсов
     const res = await fetch('courses/index.json');
-    const courses = await res.json();
-    courses.forEach(course => {
+    courseIndex = await res.json();
+
+    injectAlternateLinks();
+
+    // Заполняем селект
+    courseIndex.forEach(course => {
         const opt = document.createElement('option');
         opt.value = course.file;
         opt.textContent = course.title;
         courseSelect.appendChild(opt);
     });
-    courseSelect.addEventListener('change', loadSelectedCourse);
 
+    // Проверяем URL
+    const courseFileFromUrl = getCourseFileFromUrl();
+
+    if (courseFileFromUrl) {
+        // Автовыбор курса из URL
+        courseSelect.value = courseFileFromUrl;
+        await loadSelectedCourse();
+    } else {
+        // Главная страница
+        updateMetaTags(); // без курса
+        courseSelect.addEventListener('change', loadSelectedCourse);
+    }
+
+    // Восстановление ключа
     const savedKey = Storage.get('api_key');
     if (savedKey) apiKeyInput.value = savedKey.replace(/./g, '*');
 })();

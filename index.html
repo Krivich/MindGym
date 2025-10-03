@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MindGym</title>
+
+    <!-- Динамические метатеги (будут обновляться из JS) -->
+    <title>MindGym — Интерактивный тренажёр навыков</title>
+    <meta name="description" content="Развивайте эмоциональный интеллект, коммуникацию, электробезопасность и другие навыки через диалог с ИИ. Open Source.">
+    <link rel="canonical" href="https://krivich.github.io/MindGym/" />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:title" content="MindGym — Интерактивный тренажёр навыков" />
+    <meta property="og:description" content="Развивайте эмоциональный интеллект, коммуникацию, электробезопасность и другие навыки через диалог с ИИ." />
+    <meta property="og:url" content="https://krivich.github.io/MindGym/" />
+    <meta property="og:type" content="website" />
+
+    <link id="seo-alternate-placeholder" rel="alternate" href="#" />
+
     <style>
         :root {
             --bg: #fcfcfd;
@@ -219,13 +232,14 @@
             align-items: center;
             justify-content: center;
             padding: 24px;
-            position: relative;
+            position: relative; /* Ensure positioning context for absolute children */
+            overflow: hidden; /* Hide layers overflowing the landing area */
         }
         .landing-content {
             text-align: center;
             max-width: 500px;
             position: relative;
-            z-index: 1;
+            z-index: 1; /* Keep content above parallax layers */
         }
         .landing-content h1 {
             font-weight: 800;
@@ -291,20 +305,12 @@
         }
 
         /* Параллакс */
-        .parallax-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            pointer-events: none;
-            z-index: 0;
-        }
+        /* Removed .parallax-container as layers are now direct children of .landing */
         .parallax-layer {
             position: absolute;
             border-radius: 50%;
             will-change: transform;
+            z-index: -1; /* Place layers behind the landing-content */
         }
         .layer-0 {
             width: 300px;
@@ -349,11 +355,10 @@
 
 <!-- Лендинг -->
 <div class="landing" id="landing">
-    <div class="parallax-container">
-        <div class="parallax-layer layer-0"></div>
-        <div class="parallax-layer layer-1"></div>
-        <div class="parallax-layer layer-2"></div>
-    </div>
+    <!-- Parallax layers are now direct children of .landing -->
+    <div class="parallax-layer layer-0"></div>
+    <div class="parallax-layer layer-1"></div>
+    <div class="parallax-layer layer-2"></div>
     <div class="landing-content">
         <div class="app-icon">🧠</div>
         <h1>MindGym</h1>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>MindGym</title>
+    <script>
+        // Перенаправление SPA-маршрутов
+        const path = window.location.pathname;
+        if (path.split('/').length > 2) {
+            window.location.replace('/MindGym/' + path.split('/').pop());
+        } else {
+            window.location.replace('/MindGym/');
+        }
+    </script>
+</head>
+</html>
