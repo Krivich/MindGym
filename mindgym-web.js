@@ -124,11 +124,18 @@ function getCourseIdByFile(filename) {
 
 // Получить имя файла по ID из URL
 function getCourseFileFromUrl() {
-    const path = window.location.pathname;
-    const parts = path.split('/');
-    const lastPart = parts[parts.length - 1];
-    if (lastPart && lastPart !== 'MindGym' && lastPart !== '') {
-        const entry = courseIndex.find(c => c.id === lastPart);
+    // Сначала пробуем хеш (после #)
+    let courseId = window.location.hash.replace('#', '');
+
+    // Если хеша нет — пробуем путь (для прямых заходов до редиректа)
+    if (!courseId) {
+        const path = window.location.pathname;
+        const parts = path.split('/');
+        courseId = parts[parts.length - 1];
+    }
+
+    if (courseId && courseId !== 'MindGym' && courseId !== '') {
+        const entry = courseIndex.find(c => c.id === courseId);
         return entry ? entry.file : null;
     }
     return null;
@@ -348,11 +355,8 @@ function injectAlternateLinks() {
 }
 
 (async () => {
-    // Загружаем индекс курсов
     const res = await fetch('courses/index.json');
     courseIndex = await res.json();
-
-    injectAlternateLinks();
 
     // Заполняем селект
     courseIndex.forEach(course => {
@@ -362,16 +366,17 @@ function injectAlternateLinks() {
         courseSelect.appendChild(opt);
     });
 
-    // Проверяем URL
+    // Проверяем URL (с учётом хеша)
     const courseFileFromUrl = getCourseFileFromUrl();
 
     if (courseFileFromUrl) {
-        // Автовыбор курса из URL
         courseSelect.value = courseFileFromUrl;
+        // Отключаем обработчик, чтобы не сработал при ручном выборе
         await loadSelectedCourse();
+        // После загрузки — убираем хеш, чтобы URL был чистым
+        history.replaceState(null, '', window.location.pathname);
     } else {
-        // Главная страница
-        updateMetaTags(); // без курса
+        updateMetaTags(); // главная
         courseSelect.addEventListener('change', loadSelectedCourse);
     }
 

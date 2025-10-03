@@ -4,13 +4,16 @@
     <meta charset="utf-8">
     <title>MindGym</title>
     <script>
-        // Перенаправление SPA-маршрутов
+        // Получаем путь после /MindGym/
         const path = window.location.pathname;
-        if (path.split('/').length > 2) {
-            window.location.replace('/MindGym/' + path.split('/').pop());
-        } else {
-            window.location.replace('/MindGym/');
-        }
+        const parts = path.split('/');
+        // Находим последний сегмент (ID курса)
+        const courseId = parts[parts.length - 1] || '';
+
+        // Перенаправляем на index.html с хешем (без перезагрузки)
+        window.history.replaceState(null, '', `/MindGym/#${courseId}`);
+        window.location.reload();
     </script>
 </head>
+<body></body>
 </html>
