@@ -222,6 +222,10 @@ async function sendMessage() {
 
         if (result.isCorrect) {
             addMessage('coach', '✅ Верно!');
+            // Показываем эталон как образец
+            setTimeout(() => {
+                addMessage('coach', `📘 <strong>Как еще можно было ответить:</strong><br>${exercise.expected_answer}`);
+            }, 600);
 
             if (core.hasNext()) {
                 // Есть следующее упражнение в модуле

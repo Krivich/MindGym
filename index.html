@@ -184,17 +184,6 @@
             color: var(--text);
         }
 
-        .benefits li::before {
-            content: '🧠';
-            position: absolute;
-            left: 0;
-            top: 2px;
-            font-size: 18px;
-        }
-
-        .benefits li:nth-child(2)::before { content: '💬'; }
-        .benefits li:nth-child(3)::before { content: '🌱'; }
-
         .scope {
             font-size: 18px;
             font-weight: 400;
@@ -369,32 +358,37 @@
         }
 
         /* Параллакс */
+
         .parallax-layer {
             position: absolute;
             border-radius: 50%;
             will-change: transform;
-            z-index: 0;
+            z-index: 1; /* ← ключевое изменение */
+            box-shadow: 0 0 10px rgba(108, 99, 255, 0.05); /* лёгкая глубина */
         }
+
         .layer-0 {
             width: 300px;
             height: 300px;
             top: 10%;
             left: 5%;
-            background: radial-gradient(circle, rgba(108, 99, 255, 0.08) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(108, 99, 255, 0.15) 0%, transparent 70%);
         }
+
         .layer-1 {
             width: 200px;
             height: 200px;
             top: 70%;
             left: 75%;
-            background: radial-gradient(circle, rgba(108, 99, 255, 0.05) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(108, 99, 255, 0.10) 0%, transparent 70%);
         }
+
         .layer-2 {
             width: 150px;
             height: 150px;
             top: 40%;
             left: 45%;
-            background: radial-gradient(circle, rgba(108, 99, 255, 0.03) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(108, 99, 255, 0.06) 0%, transparent 70%);
         }
 
         /* Адаптивность */
@@ -475,7 +469,7 @@
             <a href="https://github.com/krivich/MindGym" target="_blank">→ GitHub</a>
         </p>
 
-        <p class="instruction">👇 Выберите курс в заголовке, чтобы начать</p>
+        <p class="instruction">👆 Выберите курс в заголовке, чтобы начать</p>
     </div>
 </div>
 
