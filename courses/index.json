@@ -13,5 +13,10 @@
     "id": "electrical_safety",
     "title": "Электробезопасность в офисе",
     "file": "electrical_safety.json"
+  },
+  {
+    "id": "anti_scam",
+    "title": "Защита от мошенников: живи спокойно",
+    "file": "anti_scam_full.json"
   }
 ]
