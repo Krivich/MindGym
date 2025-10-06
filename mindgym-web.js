@@ -113,6 +113,94 @@ function updateMetaTags(course = null) {
     document.querySelector('meta[property="og:url"]').setAttribute('content', url);
 }
 
+
+// Обработка выбора "Загрузить из файла"
+courseSelect.addEventListener('change', async (e) => {
+    if (e.target.value === '__upload__') {
+        document.getElementById('courseFileInput').click();
+        e.target.selectedIndex = 0; // сбросить выбор
+    } else {
+        await loadSelectedCourse();
+    }
+});
+
+// Обработка загрузки через файл
+document.getElementById('courseFileInput').addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const courseData = JSON.parse(event.target.result);
+            startCustomCourse(courseData);
+        } catch (err) {
+            alert('Ошибка: неверный формат JSON');
+        }
+    };
+    reader.readAsText(file);
+});
+
+// Drag & Drop на всё приложение
+document.addEventListener('dragover', (e) => {
+    e.preventDefault();
+});
+
+document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length && files[0].name.endsWith('.json')) {
+        const file = files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const courseData = JSON.parse(event.target.result);
+                startCustomCourse(courseData);
+            } catch (err) {
+                alert('Ошибка: неверный формат JSON');
+            }
+        };
+        reader.readAsText(file);
+    }
+});
+
+// Функция запуска кастомного курса
+function startCustomCourse(courseData) {
+    // Валидация
+    if (!courseData.metadata?.title || !courseData.modules || !courseData.exercises) {
+        throw new Error('Неверный формат курса');
+    }
+
+    // Переключаемся на чат
+    landing.style.display = 'none';
+    chatContainer.style.display = 'flex';
+
+    // Загружаем курс
+    core.loadCourse(courseData);
+    courseTitle = courseData.metadata.title;
+    core.course = courseData;
+
+    chatMessages.innerHTML = '';
+    showExercise();
+
+    // Обновляем title
+    document.title = `${courseData.metadata.title} — MindGym`;
+}
+
+// Возврат на лендинг по клику на логотип
+document.getElementById('appLogo').addEventListener('click', () => {
+    // Скрываем чат
+    chatContainer.style.display = 'none';
+    // Показываем лендинг
+    landing.style.display = 'flex';
+    // Очищаем чат
+    chatMessages.innerHTML = '';
+    // Сбрасываем выбор курса
+    courseSelect.selectedIndex = 0;
+    // Обновляем метатеги на главную
+    updateMetaTags();
+});
+
 // Глобальная переменная для хранения списка курсов
 let courseIndex = [];
 
@@ -275,42 +363,6 @@ async function loadSelectedCourse() {
     updateMetaTags(core.course);
 }
 
-// === Параллакс ===
-function initParallax() {
-    // Changed to listen on the 'landing' element instead of 'parallax-container'
-    const parallaxTarget = document.getElementById('landing');
-    if (!parallaxTarget) return;
-
-    const layers = {
-        layer0: document.querySelector('.layer-0'),
-        layer1: document.querySelector('.layer-1'),
-        layer2: document.querySelector('.layer-2')
-    };
-    const depth = { layer0: 0.02, layer1: 0.04, layer2: 0.06 };
-    const sensitivity = 30;
-
-    parallaxTarget.addEventListener('mousemove', (e) => {
-        const rect = parallaxTarget.getBoundingClientRect();
-        // Calculate movement relative to the center of the landing element
-        const moveX = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
-        const moveY = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
-
-        Object.keys(layers).forEach(key => {
-            if (layers[key]) {
-                const x = moveX * sensitivity * depth[key];
-                const y = moveY * sensitivity * depth[key];
-                layers[key].style.transform = `translate(${x}px, ${y}px)`;
-            }
-        });
-    });
-
-    parallaxTarget.addEventListener('mouseleave', () => {
-        Object.values(layers).forEach(el => {
-            if (el) el.style.transform = 'translate(0, 0)';
-        });
-    });
-}
-
 // === Инициализация ===
 apiKeyInput.addEventListener('input', () => {
     const val = apiKeyInput.value;
@@ -334,8 +386,6 @@ userInput.addEventListener('keydown', (e) => {
         if (!sendBtn.disabled) sendMessage();
     }
 });
-
-initParallax();
 
 function injectAlternateLinks() {
     const baseUrl = 'https://krivich.github.io/MindGym';
@@ -362,13 +412,19 @@ function injectAlternateLinks() {
     const res = await fetch('courses/index.json');
     courseIndex = await res.json();
 
-    // Заполняем селект
+    // Заполняем селект курсами
     courseIndex.forEach(course => {
         const opt = document.createElement('option');
         opt.value = course.file;
         opt.textContent = course.title;
         courseSelect.appendChild(opt);
     });
+
+    // Добавляем "Загрузить из файла..." В КОНЕЦ
+    const uploadOption = document.createElement('option');
+    uploadOption.value = '__upload__';
+    uploadOption.textContent = '📁 Загрузить из файла…';
+    courseSelect.appendChild(uploadOption);
 
     // Проверяем URL (с учётом хеша)
     const courseFileFromUrl = getCourseFileFromUrl();

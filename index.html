@@ -21,7 +21,6 @@
     <meta property="og:url" content="https://krivich.github.io/MindGym/" />
     <meta property="og:type" content="website" />
     <link id="seo-alternate-placeholder" rel="alternate" href="#" />
-
     <style>
         :root {
             --bg: #ffffff;
@@ -49,6 +48,7 @@
             padding: 24px;
             font-size: 16px;
             line-height: 1.6;
+            overflow-y: auto; /* разрешить скролл */
         }
 
         .header {
@@ -64,6 +64,12 @@
             font-size: 24px;
             color: var(--primary);
             letter-spacing: -0.4px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .app-title:hover {
+            color: #5a52d5;
         }
 
         .input-group {
@@ -108,36 +114,23 @@
             display: block;
         }
 
-        /* === Лендинг === */
+        /* === Лендинг — прокручиваемый и адаптивный === */
         .landing {
-            background: var(--card);
-            border-radius: 24px;
-            box-shadow: var(--shadow);
-            height: calc(100vh - 180px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 48px;
             position: relative;
             overflow: hidden;
+            min-height: 60vh;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
-        .landing::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(108, 99, 255, 0.03) 0%, transparent 70%);
-            z-index: 0;
-        }
 
         .landing-content {
-            text-align: left;
-            max-width: 600px;
             position: relative;
             z-index: 1;
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .landing-content .app-icon {
@@ -184,6 +177,13 @@
             color: var(--text);
         }
 
+        .benefits li::before {
+            position: absolute;
+            left: 0;
+            top: 2px;
+            font-size: 18px;
+        }
+
         .scope {
             font-size: 18px;
             font-weight: 400;
@@ -193,7 +193,7 @@
         }
 
         .open-source {
-            margin: 0 0 24px;
+            margin: 0;
             color: var(--text-light);
             font-size: 15px;
         }
@@ -212,7 +212,11 @@
             color: var(--text-light);
             font-style: italic;
             font-size: 15px;
-            margin: 0;
+            margin: 0 0 24px;
+        }
+        .instruction small {
+            color: var(--text-light);
+            font-weight: 400;
         }
 
         /* === Чат === */
@@ -357,46 +361,11 @@
             height: 20px;
         }
 
-        /* Параллакс */
-
-        .parallax-layer {
-            position: absolute;
-            border-radius: 50%;
-            will-change: transform;
-            z-index: 1; /* ← ключевое изменение */
-            box-shadow: 0 0 10px rgba(108, 99, 255, 0.05); /* лёгкая глубина */
-        }
-
-        .layer-0 {
-            width: 300px;
-            height: 300px;
-            top: 10%;
-            left: 5%;
-            background: radial-gradient(circle, rgba(108, 99, 255, 0.15) 0%, transparent 70%);
-        }
-
-        .layer-1 {
-            width: 200px;
-            height: 200px;
-            top: 70%;
-            left: 75%;
-            background: radial-gradient(circle, rgba(108, 99, 255, 0.10) 0%, transparent 70%);
-        }
-
-        .layer-2 {
-            width: 150px;
-            height: 150px;
-            top: 40%;
-            left: 45%;
-            background: radial-gradient(circle, rgba(108, 99, 255, 0.06) 0%, transparent 70%);
-        }
-
         /* Адаптивность */
         @media (max-width: 768px) {
             .landing {
                 padding: 24px;
-                height: auto;
-                min-height: 80vh;
+                min-height: auto;
             }
             .tagline {
                 font-size: 24px;
@@ -417,14 +386,51 @@
                 padding: 12px;
             }
         }
+
+        .brain-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: start;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .brain-icon {
+            /* Адаптивный размер: 80% ширины экрана, но не больше 400px */
+            width: 80vmin;
+            height: 80vmin;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60vmin; /* масштабируется пропорционально */
+            opacity: 0.03; /* заметно, но не отвлекает */
+            animation: brainPulse 6s infinite ease-in-out;
+        }
+
+        @keyframes brainPulse {
+            0%, 100% {
+                opacity: 0.04;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.02;
+                transform: scale(1.02);
+            }
+        }
     </style>
 </head>
 <body>
 <div class="header">
-    <div class="app-title">MindGym</div>
+    <div class="app-title" id="appLogo">MindGym</div>
     <select id="courseSelect" style="flex: 1; min-width: 180px;">
-        <option value="" disabled selected>Выберите курс для тренировки</option>
+        <option value="" disabled selected>Выберите курс</option>
     </select>
+    <input type="file" id="courseFileInput" accept=".json" style="display: none;" />
     <div class="input-group">
         <input type="password" id="apiKey" placeholder="Используется Ollama (qwen3:4b) → Введите ключ ☁️ openrouter.ai" autocomplete="off" />
         <button class="clear-key" id="clearKey">×</button>
@@ -432,11 +438,10 @@
 </div>
 
 <!-- Лендинг -->
-<!-- Лендинг -->
 <div class="landing" id="landing">
-    <div class="parallax-layer layer-0"></div>
-    <div class="parallax-layer layer-1"></div>
-    <div class="parallax-layer layer-2"></div>
+    <div class="brain-bg">
+        <div class="brain-icon">🧠</div>
+    </div>
 
     <div class="landing-content">
 
@@ -450,7 +455,6 @@
             Потому что знания — не навыки.
         </p>
 
-        <div class="app-icon">🧠</div>
         <p class="what-is">MindGym — это тренажёр для языка навыков:</p>
 
         <ul class="benefits">
@@ -464,12 +468,14 @@
             тренируйте то, что важно именно вам.
         </p>
 
+        <p class="instruction">👆 Выберите курс в заголовке<br>
+            <small>Или перетащите свой JSON-файл в окно браузера</small>
+        </p>
+
         <p class="open-source">
             💡 <strong>Open Source</strong> — добавляйте курсы и улучшайте систему!<br>
             <a href="https://github.com/krivich/MindGym" target="_blank">→ GitHub</a>
         </p>
-
-        <p class="instruction">👆 Выберите курс в заголовке, чтобы начать</p>
     </div>
 </div>
 
