@@ -3,6 +3,7 @@ const core = new MindGymCore();
 let courseTitle = '';
 let abortController = null;
 let thinkingMessageId = null;
+let currentChatLog = [];
 
 // DOM
 const apiKeyInput = document.getElementById('apiKey');
@@ -11,6 +12,7 @@ const courseSelect = document.getElementById('courseSelect');
 const chatMessages = document.getElementById('chatMessages');
 const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
+const resetBtn = document.getElementById('resetProgress');
 const landing = document.getElementById('landing');
 const chatContainer = document.getElementById('chatContainer');
 
@@ -45,7 +47,6 @@ class LLMClient {
 }`;
 
         if (this.apiKey) {
-            // === OpenRouter (облако) ===
             const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -67,7 +68,6 @@ class LLMClient {
             const clean = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
             return JSON.parse(clean);
         } else {
-            // === Ollama (локально) ===
             const res = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -85,143 +85,141 @@ class LLMClient {
     }
 }
 
+// === Рендеринг ===
+function addMessageToDOM(role, text, thinking = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${role}`;
+    messageDiv.innerHTML = `<div class="message-bubble">${text}</div>`;
+    if (thinking) {
+        messageDiv.setAttribute('data-thinking', 'true');
+    }
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function renderModuleHeader(moduleId) {
+    const module = core.course.modules.find(m => m.id === moduleId);
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'module-header';
+    headerDiv.setAttribute('data-module-id', moduleId);
+    headerDiv.innerHTML = `
+    <div class="module-divider"></div>
+    <div class="module-title">${module.title}</div>
+    <div class="module-description">${module.description}</div>
+    <div class="module-divider"></div>
+  `;
+    chatMessages.appendChild(headerDiv);
+}
+
+function renderQuestion(prompt) {
+    addMessageToDOM('coach', prompt);
+}
+
+// === Применение команды ===
+function applyCommand(cmd) {
+    switch (cmd.type) {
+        case 'SHOW_MODULE_HEADER':
+            if (!chatMessages.querySelector(`[data-module-id="${cmd.moduleId}"]`)) {
+                renderModuleHeader(cmd.moduleId);
+            }
+            break;
+
+        case 'SHOW_QUESTION':
+            const exercise = core.course.exercises.find(e => e.id === cmd.exerciseId);
+            if (exercise) {
+                // 🔥 Синхронизируем состояние ядра
+                core.currentModuleId = exercise.module_id;
+                core.exerciseIndex = core.course.exercises
+                    .filter(e => e.module_id === exercise.module_id)
+                    .sort((a, b) => a.difficulty - b.difficulty)
+                    .findIndex(e => e.id === exercise.id);
+
+                renderQuestion(exercise.prompt);
+            }
+            break;;
+
+        case 'ADD_MESSAGE':
+            addMessageToDOM(cmd.role, cmd.text, cmd.thinking);
+            if (cmd.thinking) {
+                thinkingMessageId = 'thinking';
+            }
+            break;
+
+        case 'HIDE_THINKING':
+            const thinkingEl = chatMessages.querySelector('[data-thinking="true"]');
+            if (thinkingEl) thinkingEl.remove();
+            thinkingMessageId = null;
+            break;
+
+        case 'COMPLETE_COURSE':
+            addMessageToDOM('coach', '🎉 Курс завершён! Выберите новый курс.');
+            break;
+    }
+}
+
+// === Сохранение и загрузка ===
+function saveChatLog(courseId, version) {
+    const key = JSON.stringify({ type: 'mindgym_log', courseId, version });
+    localStorage.setItem(key, JSON.stringify(currentChatLog));
+}
+
+function loadChatLog(courseId, version) {
+    const key = JSON.stringify({ type: 'mindgym_log', courseId, version });
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : null;
+}
+
+function clearChatLog(courseId) {
+    const allKeys = Object.keys(localStorage);
+    allKeys.forEach(key => {
+        try {
+            const parsed = JSON.parse(key);
+            if (parsed.type === 'mindgym_log' && parsed.courseId === courseId) {
+                localStorage.removeItem(key);
+            }
+        } catch (e) { /* ignore */ }
+    });
+}
+
+// === Метатеги ===
 function updateMetaTags(course = null) {
     const baseUrl = 'https://krivich.github.io/MindGym';
     let title, description, url;
 
     if (course) {
-        // Страница курса
         title = `${course.metadata.title} — MindGym`;
-        description = course.metadata.description || `Интерактивный курс по ${course.metadata.title.toLowerCase()}. Тренируйте навыки через диалог с ИИ.`;
-        const courseId = getCourseIdByFile(course.metadata._filename); // см. ниже
+        description = course.metadata.description || `Интерактивный курс по ${course.metadata.title.toLowerCase()}.`;
+        const courseId = getCourseIdByFile(course.metadata._filename);
         url = `${baseUrl}/${courseId}`;
     } else {
-        // Главная страница
         title = 'MindGym — Интерактивный тренажёр навыков';
-        description = 'Развивайте эмоциональный интеллект, коммуникацию, электробезопасность и другие навыки через диалог с ИИ. Open Source.';
+        description = 'Развивайте эмоциональный интеллект, коммуникацию, электробезопасность и другие навыки через диалог с ИИ.';
         url = baseUrl;
     }
 
-    // Обновляем метатеги
     document.title = title;
     document.querySelector('meta[name="description"]').setAttribute('content', description);
     document.querySelector('link[rel="canonical"]').setAttribute('href', url);
-
-    // Open Graph
     document.querySelector('meta[property="og:title"]').setAttribute('content', title);
     document.querySelector('meta[property="og:description"]').setAttribute('content', description);
     document.querySelector('meta[property="og:url"]').setAttribute('content', url);
 }
 
-
-// Обработка выбора "Загрузить из файла"
-courseSelect.addEventListener('change', async (e) => {
-    if (e.target.value === '__upload__') {
-        document.getElementById('courseFileInput').click();
-        e.target.selectedIndex = 0; // сбросить выбор
-    } else {
-        await loadSelectedCourse();
-    }
-});
-
-// Обработка загрузки через файл
-document.getElementById('courseFileInput').addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        try {
-            const courseData = JSON.parse(event.target.result);
-            startCustomCourse(courseData);
-        } catch (err) {
-            alert('Ошибка: неверный формат JSON');
-        }
-    };
-    reader.readAsText(file);
-});
-
-// Drag & Drop на всё приложение
-document.addEventListener('dragover', (e) => {
-    e.preventDefault();
-});
-
-document.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
-    if (files.length && files[0].name.endsWith('.json')) {
-        const file = files[0];
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const courseData = JSON.parse(event.target.result);
-                startCustomCourse(courseData);
-            } catch (err) {
-                alert('Ошибка: неверный формат JSON');
-            }
-        };
-        reader.readAsText(file);
-    }
-});
-
-// Функция запуска кастомного курса
-function startCustomCourse(courseData) {
-    // Валидация
-    if (!courseData.metadata?.title || !courseData.modules || !courseData.exercises) {
-        throw new Error('Неверный формат курса');
-    }
-
-    // Переключаемся на чат
-    landing.style.display = 'none';
-    chatContainer.style.display = 'flex';
-
-    // Загружаем курс
-    core.loadCourse(courseData);
-    courseTitle = courseData.metadata.title;
-    core.course = courseData;
-
-    chatMessages.innerHTML = '';
-    showExercise();
-
-    // Обновляем title
-    document.title = `${courseData.metadata.title} — MindGym`;
-}
-
-// Возврат на лендинг по клику на логотип
-document.getElementById('appLogo').addEventListener('click', () => {
-    // Скрываем чат
-    chatContainer.style.display = 'none';
-    // Показываем лендинг
-    landing.style.display = 'flex';
-    // Очищаем чат
-    chatMessages.innerHTML = '';
-    // Сбрасываем выбор курса
-    courseSelect.selectedIndex = 0;
-    // Обновляем метатеги на главную
-    updateMetaTags();
-});
-
-// Глобальная переменная для хранения списка курсов
+// === Загрузка курсов ===
 let courseIndex = [];
 
-// Получить ID курса по имени файла
 function getCourseIdByFile(filename) {
     const entry = courseIndex.find(c => c.file === filename);
     return entry ? entry.id : 'unknown';
 }
 
-// Получить имя файла по ID из URL
 function getCourseFileFromUrl() {
-    // Сначала пробуем хеш (после #)
     let courseId = window.location.hash.replace('#', '');
-
-    // Если хеша нет — пробуем путь (для прямых заходов до редиректа)
     if (!courseId) {
         const path = window.location.pathname;
         const parts = path.split('/');
         courseId = parts[parts.length - 1];
     }
-
     if (courseId && courseId !== 'MindGym' && courseId !== '') {
         const entry = courseIndex.find(c => c.id === courseId);
         return entry ? entry.file : null;
@@ -229,67 +227,42 @@ function getCourseFileFromUrl() {
     return null;
 }
 
-// === Чат-функции ===
-function addMessage(role, text, messageId = null) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${role}`;
-    messageDiv.innerHTML = `<div class="message-bubble">${text}</div>`;
-    if (messageId) messageDiv.id = messageId;
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function showExercise() {
-    const exercise = core.getCurrentExercise();
-    if (!exercise) return;
-
-    const module = core.course.modules.find(m => m.id === core.currentModuleId);
-    const headerExists = chatMessages.querySelector(`[data-module-id="${module.id}"]`);
-    if (!headerExists) {
-        const headerDiv = document.createElement('div');
-        headerDiv.className = 'module-header';
-        headerDiv.setAttribute('data-module-id', module.id);
-        headerDiv.innerHTML = `
-      <div class="module-divider"></div>
-      <div class="module-title">${module.title}</div>
-      <div class="module-description">${module.description}</div>
-      <div class="module-divider"></div>
-    `;
-        chatMessages.appendChild(headerDiv);
-    }
-    addMessage('coach', exercise.prompt);
-    sendBtn.disabled = false;
-}
-
-function updateThinkingMessage(timeLeft) {
-    const el = document.getElementById('thinking');
-    if (el) {
-        el.innerHTML = `<span class="thinking">Думаю<span class="timer"> (${timeLeft}s)</span></span>`;
-    }
-}
-
+// === Отправка сообщения ===
 async function sendMessage() {
     const text = userInput.value.trim();
     if (!text) return;
 
-    addMessage('user', text);
+    currentChatLog.push({ type: 'ADD_MESSAGE', role: 'user', text });
+    applyCommand(currentChatLog[currentChatLog.length - 1]);
+
     userInput.value = '';
     sendBtn.disabled = true;
 
     const exercise = core.getCurrentExercise();
     if (!exercise) {
-        addMessage('coach', 'Сначала выберите курс.');
+        currentChatLog.push({ type: 'ADD_MESSAGE', role: 'coach', text: 'Сначала выберите курс.' });
+        applyCommand(currentChatLog[currentChatLog.length - 1]);
         sendBtn.disabled = false;
         return;
     }
 
-    thinkingMessageId = 'thinking';
-    addMessage('coach', '<span class="thinking">Думаю<span class="timer"> (25s)</span></span>', thinkingMessageId);
+    // Добавляем "Думаю" с маркером
+    currentChatLog.push({
+        type: 'ADD_MESSAGE',
+        role: 'coach',
+        text: '<span class="thinking">Думаю<span class="timer"> (25s)</span></span>',
+        thinking: true
+    });
+    applyCommand(currentChatLog[currentChatLog.length - 1]);
 
+    // Таймер
     let timeLeft = 25;
     const timerInterval = setInterval(() => {
         timeLeft--;
-        updateThinkingMessage(timeLeft);
+        const timerEl = chatMessages.querySelector('[data-thinking="true"] .timer');
+        if (timerEl) {
+            timerEl.textContent = ` (${timeLeft}s)`;
+        }
         if (timeLeft <= 0) clearInterval(timerInterval);
     }, 1000);
 
@@ -306,45 +279,59 @@ async function sendMessage() {
         ]);
 
         clearInterval(timerInterval);
-        document.getElementById(thinkingMessageId)?.remove();
+        currentChatLog.push({ type: 'HIDE_THINKING' });
+        applyCommand(currentChatLog[currentChatLog.length - 1]);
 
         if (result.isCorrect) {
-            addMessage('coach', '✅ Верно!');
-            // Показываем эталон как образец
-            setTimeout(() => {
-                addMessage('coach', `📘 <strong>Как еще можно было ответить:</strong><br>${exercise.expected_answer}`);
-            }, 600);
+            currentChatLog.push({ type: 'ADD_MESSAGE', role: 'coach', text: '✅ Верно!' });
+            applyCommand(currentChatLog[currentChatLog.length - 1]);
+
+            currentChatLog.push({ type: 'ADD_MESSAGE', role: 'coach', text: `📘 <strong>Как можно ответить:</strong><br>${exercise.expected_answer}` });
+            applyCommand(currentChatLog[currentChatLog.length - 1]);
 
             if (core.hasNext()) {
-                // Есть следующее упражнение в модуле
                 core.next();
-                setTimeout(showExercise, 800);
+                const nextExercise = core.getCurrentExercise();
+                currentChatLog.push({ type: 'SHOW_QUESTION', exerciseId: nextExercise.id });
+                applyCommand(currentChatLog[currentChatLog.length - 1]);
             } else if (core.hasNextModule()) {
-                // Модуль завершён — переходим к следующему
                 core.nextModule();
-                setTimeout(showExercise, 800);
+                const module = core.course.modules.find(m => m.id === core.currentModuleId);
+                currentChatLog.push({ type: 'SHOW_MODULE_HEADER', moduleId: module.id });
+                const nextExercise = core.getCurrentExercise();
+                currentChatLog.push({ type: 'SHOW_QUESTION', exerciseId: nextExercise.id });
+                applyCommand(currentChatLog[currentChatLog.length - 2]);
+                applyCommand(currentChatLog[currentChatLog.length - 1]);
             } else {
-                // Весь курс завершён
-                addMessage('coach', '🎉 Курс завершён! Выберите новый курс.');
+                currentChatLog.push({ type: 'COMPLETE_COURSE' });
+                applyCommand(currentChatLog[currentChatLog.length - 1]);
             }
         } else {
             const feedback = result.feedback?.trim()
                 ? result.feedback
                 : exercise.feedback_on_error || 'Попробуйте ещё раз.';
-            addMessage('coach', `💡 ${feedback}`);
+            currentChatLog.push({ type: 'ADD_MESSAGE', role: 'coach', text: `💡 ${feedback}` });
+            applyCommand(currentChatLog[currentChatLog.length - 1]);
             sendBtn.disabled = false;
         }
+
+        const courseId = getCourseIdByFile(core.course.metadata._filename);
+        saveChatLog(courseId, core.course.metadata.version);
+
     } catch (error) {
         clearInterval(timerInterval);
-        document.getElementById(thinkingMessageId)?.remove();
+        currentChatLog.push({ type: 'HIDE_THINKING' });
+        applyCommand(currentChatLog[currentChatLog.length - 1]);
         if (error.name !== 'AbortError') {
             const fallback = exercise.feedback_on_error || 'Превышено время ожидания.';
-            addMessage('coach', `💡 ${fallback}`);
+            currentChatLog.push({ type: 'ADD_MESSAGE', role: 'coach', text: `💡 ${fallback}` });
+            applyCommand(currentChatLog[currentChatLog.length - 1]);
             sendBtn.disabled = false;
         }
     }
 }
 
+// === Загрузка курса ===
 async function loadSelectedCourse() {
     const file = courseSelect.value;
     if (!file) return;
@@ -353,17 +340,140 @@ async function loadSelectedCourse() {
     const data = await res.json();
     core.loadCourse(data);
     courseTitle = data.metadata.title;
-    data.metadata._filename = file; // ← сохраняем имя файла
-    core.course = data; // убедитесь, что курс доступен глобально
+    data.metadata._filename = file;
+    core.course = data;
+
+    const courseId = getCourseIdByFile(file);
+    const savedLog = loadChatLog(courseId, data.metadata.version);
 
     landing.style.display = 'none';
     chatContainer.style.display = 'flex';
     chatMessages.innerHTML = '';
-    showExercise();
+
+    // Показываем кнопку сброса
+    document.getElementById('resetProgress').style.display = 'flex';
+
+    if (savedLog) {
+        currentChatLog = savedLog;
+        currentChatLog.forEach(applyCommand);
+    } else {
+        currentChatLog = [];
+        const firstModule = data.modules[0];
+        const firstExercise = core.getCurrentExercise();
+
+        currentChatLog.push({ type: 'SHOW_MODULE_HEADER', moduleId: firstModule.id });
+        currentChatLog.push({ type: 'SHOW_QUESTION', exerciseId: firstExercise.id });
+
+        currentChatLog.forEach(applyCommand);
+    }
+
     updateMetaTags(core.course);
+    sendBtn.disabled = false;
 }
 
-// === Инициализация ===
+// === UI Handlers ===
+courseSelect.addEventListener('change', async (e) => {
+    if (e.target.value === '__upload__') {
+        document.getElementById('courseFileInput').click();
+        e.target.selectedIndex = 0;
+        // Скрываем кнопку при загрузке файла
+        document.getElementById('resetProgress').style.display = 'none';
+    } else if (e.target.value) {
+        // Показываем кнопку, если выбран курс
+        document.getElementById('resetProgress').style.display = 'flex';
+        await loadSelectedCourse();
+    } else {
+        // Скрываем, если ничего не выбрано
+        document.getElementById('resetProgress').style.display = 'none';
+    }
+});
+
+document.getElementById('courseFileInput').addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const courseData = JSON.parse(event.target.result);
+            startCustomCourse(courseData);
+        } catch (err) {
+            alert('Ошибка: неверный формат JSON');
+        }
+    };
+    reader.readAsText(file);
+});
+
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length && files[0].name.endsWith('.json')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const courseData = JSON.parse(event.target.result);
+                startCustomCourse(courseData);
+            } catch (err) {
+                alert('Ошибка: неверный формат JSON');
+            }
+        };
+        reader.readAsText(files[0]);
+    }
+});
+
+function startCustomCourse(courseData) {
+    if (!courseData.metadata?.title || !courseData.modules || !courseData.exercises) {
+        alert('Неверный формат курса');
+        return;
+    }
+    landing.style.display = 'none';
+    chatContainer.style.display = 'flex';
+    core.loadCourse(courseData);
+    courseTitle = courseData.metadata.title;
+    core.course = courseData;
+    chatMessages.innerHTML = '';
+
+    const firstModule = courseData.modules[0];
+    const firstExercise = courseData.exercises.find(e => e.module_id === firstModule.id);
+
+    currentChatLog = [
+        { type: 'SHOW_MODULE_HEADER', moduleId: firstModule.id },
+        { type: 'SHOW_QUESTION', exerciseId: firstExercise.id }
+    ];
+    currentChatLog.forEach(applyCommand);
+
+    document.title = `${courseData.metadata.title} — MindGym`;
+}
+
+document.getElementById('appLogo').addEventListener('click', () => {
+    chatContainer.style.display = 'none';
+    landing.style.display = 'flex';
+    chatMessages.innerHTML = '';
+    courseSelect.selectedIndex = 0;
+    updateMetaTags();
+
+    // Скрываем кнопку сброса
+    document.getElementById('resetProgress').style.display = 'none';
+});
+
+document.getElementById('resetProgress').addEventListener('click', () => {
+    if (!core.course) return;
+
+    if (confirm('Сбросить прогресс курса?\nВся история будет удалена.')) {
+        const courseId = getCourseIdByFile(core.course.metadata._filename);
+        clearChatLog(courseId);
+
+        const firstModule = core.course.modules[0];
+        const firstExercise = core.getCurrentExercise();
+        chatMessages.innerHTML = '';
+        currentChatLog = [
+            { type: 'SHOW_MODULE_HEADER', moduleId: firstModule.id },
+            { type: 'SHOW_QUESTION', exerciseId: firstExercise.id }
+        ];
+        currentChatLog.forEach(applyCommand);
+    }
+});
+
 apiKeyInput.addEventListener('input', () => {
     const val = apiKeyInput.value;
     if (val && !val.includes('*')) {
@@ -387,32 +497,11 @@ userInput.addEventListener('keydown', (e) => {
     }
 });
 
-function injectAlternateLinks() {
-    const baseUrl = 'https://krivich.github.io/MindGym';
-
-    // Удаляем старые alternate-ссылки (на случай повторного вызова)
-    document.querySelectorAll('link[rel="alternate"]').forEach(el => el.remove());
-
-    // Добавляем ссылку на главную
-    const mainLink = document.createElement('link');
-    mainLink.rel = 'alternate';
-    mainLink.href = baseUrl + '/';
-    document.head.appendChild(mainLink);
-
-    // Добавляем ссылки на все курсы
-    courseIndex.forEach(course => {
-        const link = document.createElement('link');
-        link.rel = 'alternate';
-        link.href = `${baseUrl}/${course.id}`;
-        document.head.appendChild(link);
-    });
-}
-
+// === Инициализация ===
 (async () => {
     const res = await fetch('courses/index.json');
     courseIndex = await res.json();
 
-    // Заполняем селект курсами
     courseIndex.forEach(course => {
         const opt = document.createElement('option');
         opt.value = course.file;
@@ -420,27 +509,20 @@ function injectAlternateLinks() {
         courseSelect.appendChild(opt);
     });
 
-    // Добавляем "Загрузить из файла..." В КОНЕЦ
     const uploadOption = document.createElement('option');
     uploadOption.value = '__upload__';
     uploadOption.textContent = '📁 Загрузить из файла…';
     courseSelect.appendChild(uploadOption);
 
-    // Проверяем URL (с учётом хеша)
     const courseFileFromUrl = getCourseFileFromUrl();
-
     if (courseFileFromUrl) {
         courseSelect.value = courseFileFromUrl;
-        // Отключаем обработчик, чтобы не сработал при ручном выборе
         await loadSelectedCourse();
-        // После загрузки — убираем хеш, чтобы URL был чистым
         history.replaceState(null, '', window.location.pathname);
     } else {
-        updateMetaTags(); // главная
-        courseSelect.addEventListener('change', loadSelectedCourse);
+        updateMetaTags();
     }
 
-    // Восстановление ключа
     const savedKey = Storage.get('api_key');
     if (savedKey) apiKeyInput.value = savedKey.replace(/./g, '*');
 })();

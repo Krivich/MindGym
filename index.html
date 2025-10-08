@@ -361,6 +361,27 @@
             height: 20px;
         }
 
+        .reset-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            margin: 0 8px;
+        }
+
+        .reset-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
         /* Адаптивность */
         @media (max-width: 768px) {
             .landing {
@@ -426,11 +447,20 @@
 </head>
 <body>
 <div class="header">
+
+    <!-- Скрытый файл-инпут -->
+    <input type="file" id="courseFileInput" accept=".json" style="display: none;" />
+
+    <!-- Логотип с ID -->
     <div class="app-title" id="appLogo">MindGym</div>
     <select id="courseSelect" style="flex: 1; min-width: 180px;">
         <option value="" disabled selected>Выберите курс</option>
     </select>
-    <input type="file" id="courseFileInput" accept=".json" style="display: none;" />
+
+    <!-- Кнопка сброса -->
+    <button class="reset-btn" id="resetProgress" title="Сбросить прогресс курса" style="display: none;">↺</button>
+
+
     <div class="input-group">
         <input type="password" id="apiKey" placeholder="Используется Ollama (qwen3:4b) → Введите ключ ☁️ openrouter.ai" autocomplete="off" />
         <button class="clear-key" id="clearKey">×</button>
