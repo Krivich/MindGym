@@ -1,3 +1,6 @@
+import { createDemoPlayer } from './demo-player.js';
+import { createLLMProviderSelector } from './llm-provider-selector.js';
+
 // === Глобальные переменные ===
 const core = new MindGymCore();
 let courseTitle = '';
@@ -6,8 +9,6 @@ let thinkingMessageId = null;
 let currentChatLog = [];
 
 // DOM
-const apiKeyInput = document.getElementById('apiKey');
-const clearKeyBtn = document.getElementById('clearKey');
 const courseSelect = document.getElementById('courseSelect');
 const chatMessages = document.getElementById('chatMessages');
 const userInput = document.getElementById('userInput');
@@ -15,6 +16,14 @@ const sendBtn = document.getElementById('sendBtn');
 const resetBtn = document.getElementById('resetProgress');
 const landing = document.getElementById('landing');
 const chatContainer = document.getElementById('chatContainer');
+const demoSection = document.getElementById('demoSection');
+
+const LLM_PROVIDERS = {
+    ollama: { defaultModel: 'qwen3:4b' },
+    openrouter: { defaultModel: 'qwen/qwen3-8b:free' },
+    openai: { defaultModel: 'gpt-4o-mini' },
+    mistral: { defaultModel: 'mistral-small-latest' }
+};
 
 // === Хранилище ===
 const Storage = {
@@ -25,49 +34,29 @@ const Storage = {
 
 // === LLMClient ===
 class LLMClient {
-    constructor(apiKey, course) {
-        this.apiKey = apiKey;
+    constructor(providerConfig, course) {
+        this.config = providerConfig;
         this.course = course;
+    }
+
+    get isLocal() {
+        return this.config.type === 'ollama';
     }
 
     async validateWithFeedback(exercise, userAnswer, signal) {
         const validationPrompt = this.course.metadata.validation_prompt ||
             "Ты — эксперт по теме курса. Оцени ответ пользователя по эталону.";
-
         const fullPrompt = `${validationPrompt}
-
 Ситуация: "${exercise.prompt}"
 Эталонный ответ: "${exercise.expected_answer}"
 Ответ пользователя: "${userAnswer}"
-
 Верни ТОЛЬКО валидный JSON:
 {
   "isCorrect": true/false,
   "feedback": "строка или пусто"
 }`;
 
-        if (this.apiKey) {
-            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.origin,
-                    'X-Title': 'MindGym'
-                },
-                body: JSON.stringify({
-                    model: 'qwen/qwen3-8b:free',
-                    messages: [{ role: 'user', content: fullPrompt + " . Ты обязан ответить ТОЛЬКО валидным JSON. Никаких пояснений, рассуждений, вводных фраз." }],
-                    temperature: 0.3,
-                    max_tokens: 1500
-                }),
-                signal
-            });
-            const data = await res.json();
-            const raw = data.choices?.[0]?.message?.content?.trim() || '{}';
-            const clean = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
-            return JSON.parse(clean);
-        } else {
+        if (this.isLocal) {
             const res = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -81,6 +70,44 @@ class LLMClient {
             });
             const data = await res.json();
             return JSON.parse(data.response);
+        } else {
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.key}`
+            };
+            let apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+            let model = 'qwen/qwen3-8b:free';
+
+            if (this.config.type === 'openai') {
+                apiUrl = 'https://api.openai.com/v1/chat/completions';
+                model = 'gpt-4o-mini';
+            } else if (this.config.type === 'mistral') {
+                apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+                model = 'mistral-small-latest';
+                headers['Authorization'] = `Bearer ${this.config.key}`;
+            }
+            // custom пока не поддерживаем — можно добавить позже
+
+            if (this.config.type === 'openrouter') {
+                headers['HTTP-Referer'] = window.location.origin;
+                headers['X-Title'] = 'MindGym';
+            }
+
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    model,
+                    messages: [{ role: 'user', content: fullPrompt + " . Ты обязан ответить ТОЛЬКО валидным JSON." }],
+                    temperature: 0.3,
+                    max_tokens: 1500
+                }),
+                signal
+            });
+            const data = await res.json();
+            const raw = data.choices?.[0]?.message?.content?.trim() || '{}';
+            const clean = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+            return JSON.parse(clean);
         }
     }
 }
@@ -270,8 +297,8 @@ async function sendMessage() {
     abortController = new AbortController();
 
     try {
-        const apiKey = Storage.get('api_key');
-        const llm = new LLMClient(apiKey, core.course);
+        const providerConfig = llmSelector.getConfig();
+        const llm = new LLMClient(providerConfig, core.course);
 
         const result = await Promise.race([
             llm.validateWithFeedback(exercise, text, abortController.signal),
@@ -347,6 +374,7 @@ async function loadSelectedCourse() {
     const savedLog = loadChatLog(courseId, data.metadata.version);
 
     landing.style.display = 'none';
+    demoSection.style.display = 'none'; // 👈 скрываем демо
     chatContainer.style.display = 'flex';
     chatMessages.innerHTML = '';
 
@@ -445,14 +473,14 @@ function startCustomCourse(courseData) {
     document.title = `${courseData.metadata.title} — MindGym`;
 }
 
+// В обработчике клика по логотипу (возврат на лендинг):
 document.getElementById('appLogo').addEventListener('click', () => {
     chatContainer.style.display = 'none';
     landing.style.display = 'flex';
+    demoSection.style.display = 'block'; // 👈 показываем демо
     chatMessages.innerHTML = '';
     courseSelect.selectedIndex = 0;
     updateMetaTags();
-
-    // Скрываем кнопку сброса
     document.getElementById('resetProgress').style.display = 'none';
 });
 
@@ -474,18 +502,6 @@ document.getElementById('resetProgress').addEventListener('click', () => {
     }
 });
 
-apiKeyInput.addEventListener('input', () => {
-    const val = apiKeyInput.value;
-    if (val && !val.includes('*')) {
-        Storage.set('api_key', val);
-    }
-});
-
-clearKeyBtn.addEventListener('click', () => {
-    Storage.remove('api_key');
-    apiKeyInput.value = '';
-});
-
 sendBtn.addEventListener('click', sendMessage);
 userInput.addEventListener('input', () => {
     sendBtn.disabled = userInput.value.trim() === '';
@@ -495,6 +511,33 @@ userInput.addEventListener('keydown', (e) => {
         e.preventDefault();
         if (!sendBtn.disabled) sendMessage();
     }
+});
+
+const UNIVERSAL_DEMO_LOG = {
+    module: {
+        title: "Ответ на критику",
+        description: "Как реагировать без защиты и вины"
+    },
+    steps: [
+        { role: 'coach', text: 'Партнёр говорит: «Ты вообще не слушаешь, что я говорю!»' },
+        { role: 'user', text: 'Ну да, я же не робот!' },
+        { role: 'coach', text: '💡 Это защита. Попробуйте: «Слышу твою обиду...»' },
+        { role: 'user', text: 'Слышу твою обиду. Прости, что создаю такое впечатление...' },
+        { role: 'coach', text: '✅ Верно!' }
+    ]
+};
+
+// Инициализация демо после загрузки страницы
+let llmSelector;
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('demoSection')) {
+        createDemoPlayer('demoSection', UNIVERSAL_DEMO_LOG, {
+            typingDuration: 3000,
+            messageDelay: 1800
+        });
+    }
+    llmSelector = createLLMProviderSelector('llmProviderContainer');
 });
 
 // === Инициализация ===
@@ -522,7 +565,4 @@ userInput.addEventListener('keydown', (e) => {
     } else {
         updateMetaTags();
     }
-
-    const savedKey = Storage.get('api_key');
-    if (savedKey) apiKeyInput.value = savedKey.replace(/./g, '*');
 })();

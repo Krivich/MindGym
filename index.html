@@ -443,6 +443,159 @@
                 transform: scale(1.02);
             }
         }
+
+        select {
+            padding-right: 30px !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background: var(--card) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") no-repeat;
+            background-position: right 12px center;
+            background-size: 12px;
+        }
+    </style>
+    <style>
+        .demo-section {
+            height: 60vh;
+            position: relative;
+            max-width: 600px; /* как у .landing-content */
+            margin: 40px auto; /* центрирование */
+            width: 100%;
+        }
+
+        .demo-chat-container {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            overflow: hidden;
+        }
+
+        .demo-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            cursor: pointer;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .demo-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .play-icon {
+            font-size: 48px;
+            color: var(--primary);
+        }
+
+        .typing-placeholder {
+            color: var(--text-light);
+            padding: 12px 16px;
+            font-style: italic;
+        }
+        .demo-title {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+            font-size: 18px;
+        }
+        .demo-input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            resize: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            min-height: 60px; /* фиксированная высота */
+            background: var(--card);
+            color: var(--text);
+            opacity: 0.7;
+        }
+    </style>
+    <style>
+        .llm-control {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--card);
+            min-width: 280px;
+            height: 44px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .llm-control:focus-within {
+            border-color: #c0bfff;
+            box-shadow: var(--focus-shadow);
+        }
+        .llm-provider-select,
+        .llm-model-input,
+        .llm-url-input,
+        .llm-key-input,
+        .llm-placeholder {
+            border: none;
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            color: var(--text);
+            outline: none;
+            padding: 0;
+            flex: 1;
+            min-width: 80px;
+        }
+        .llm-provider-select {
+            flex-shrink: 0;
+            max-width: 160px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .llm-placeholder {
+            color: var(--text-light);
+            font-style: italic;
+        }
+        .llm-help-link,
+        .llm-clear-btn {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .llm-help-link {
+            text-decoration: none;
+        }
+        .llm-clear-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .llm-help-link:hover,
+        .llm-clear-btn:hover {
+            color: var(--primary);
+        }
+        [hidden] {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -460,10 +613,8 @@
     <!-- Кнопка сброса -->
     <button class="reset-btn" id="resetProgress" title="Сбросить прогресс курса" style="display: none;">↺</button>
 
-
     <div class="input-group">
-        <input type="password" id="apiKey" placeholder="Используется Ollama (qwen3:4b) → Введите ключ ☁️ openrouter.ai" autocomplete="off" />
-        <button class="clear-key" id="clearKey">×</button>
+        <div id="llmProviderContainer"></div>
     </div>
 </div>
 
@@ -509,6 +660,10 @@
     </div>
 </div>
 
+<!-- Демо-панель -->
+<div class="demo-section" id="demoSection">
+</div>
+
 <!-- Чат -->
 <div class="chat-container" id="chatContainer" style="display: none;">
     <div class="chat-messages" id="chatMessages"></div>
@@ -524,6 +679,7 @@
 </div>
 
 <script src="mindgym-core.js"></script>
-<script src="mindgym-web.js"></script>
+<script type="module" src="mindgym-web.js"></script>
+<script type="module" src="llm-provider-selector.js"></script>
 </body>
 </html>
