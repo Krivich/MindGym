@@ -1,5 +1,7 @@
 import { createDemoPlayer } from './demo-player.js';
 import { createLLMProviderSelector } from './llm-provider-selector.js';
+import { CourseEditor } from './course-editor.js';
+import { createCourseActionsSelector } from './course-actions-selector.js';
 
 // === Глобальные переменные ===
 const core = new MindGymCore();
@@ -13,7 +15,6 @@ const courseSelect = document.getElementById('courseSelect');
 const chatMessages = document.getElementById('chatMessages');
 const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
-const resetBtn = document.getElementById('resetProgress');
 const landing = document.getElementById('landing');
 const chatContainer = document.getElementById('chatContainer');
 const demoSection = document.getElementById('demoSection');
@@ -38,11 +39,9 @@ class LLMClient {
         this.config = providerConfig;
         this.course = course;
     }
-
     get isLocal() {
         return this.config.type === 'ollama';
     }
-
     async validateWithFeedback(exercise, userAnswer, signal) {
         const validationPrompt = this.course.metadata.validation_prompt ||
             "Ты — эксперт по теме курса. Оцени ответ пользователя по эталону.";
@@ -55,7 +54,6 @@ class LLMClient {
   "isCorrect": true/false,
   "feedback": "строка или пусто"
 }`;
-
         if (this.isLocal) {
             const res = await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
@@ -77,7 +75,6 @@ class LLMClient {
             };
             let apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
             let model = 'qwen/qwen3-8b:free';
-
             if (this.config.type === 'openai') {
                 apiUrl = 'https://api.openai.com/v1/chat/completions';
                 model = 'gpt-4o-mini';
@@ -86,13 +83,10 @@ class LLMClient {
                 model = 'mistral-small-latest';
                 headers['Authorization'] = `Bearer ${this.config.key}`;
             }
-            // custom пока не поддерживаем — можно добавить позже
-
             if (this.config.type === 'openrouter') {
                 headers['HTTP-Referer'] = window.location.origin;
                 headers['X-Title'] = 'MindGym';
             }
-
             const res = await fetch(apiUrl, {
                 method: 'POST',
                 headers,
@@ -130,11 +124,11 @@ function renderModuleHeader(moduleId) {
     headerDiv.className = 'module-header';
     headerDiv.setAttribute('data-module-id', moduleId);
     headerDiv.innerHTML = `
-    <div class="module-divider"></div>
-    <div class="module-title">${module.title}</div>
-    <div class="module-description">${module.description}</div>
-    <div class="module-divider"></div>
-  `;
+        <div class="module-divider"></div>
+        <div class="module-title">${module.title}</div>
+        <div class="module-description">${module.description}</div>
+        <div class="module-divider"></div>
+    `;
     chatMessages.appendChild(headerDiv);
 }
 
@@ -150,34 +144,28 @@ function applyCommand(cmd) {
                 renderModuleHeader(cmd.moduleId);
             }
             break;
-
         case 'SHOW_QUESTION':
             const exercise = core.course.exercises.find(e => e.id === cmd.exerciseId);
             if (exercise) {
-                // 🔥 Синхронизируем состояние ядра
                 core.currentModuleId = exercise.module_id;
                 core.exerciseIndex = core.course.exercises
                     .filter(e => e.module_id === exercise.module_id)
                     .sort((a, b) => a.difficulty - b.difficulty)
                     .findIndex(e => e.id === exercise.id);
-
                 renderQuestion(exercise.prompt);
             }
-            break;;
-
+            break;
         case 'ADD_MESSAGE':
             addMessageToDOM(cmd.role, cmd.text, cmd.thinking);
             if (cmd.thinking) {
                 thinkingMessageId = 'thinking';
             }
             break;
-
         case 'HIDE_THINKING':
             const thinkingEl = chatMessages.querySelector('[data-thinking="true"]');
             if (thinkingEl) thinkingEl.remove();
             thinkingMessageId = null;
             break;
-
         case 'COMPLETE_COURSE':
             addMessageToDOM('coach', '🎉 Курс завершён! Выберите новый курс.');
             break;
@@ -208,36 +196,17 @@ function clearChatLog(courseId) {
     });
 }
 
-// === Метатеги ===
-function updateMetaTags(course = null) {
-    const baseUrl = 'https://krivich.github.io/MindGym';
-    let title, description, url;
-
-    if (course) {
-        title = `${course.metadata.title} — MindGym`;
-        description = course.metadata.description || `Интерактивный курс по ${course.metadata.title.toLowerCase()}.`;
-        const courseId = getCourseIdByFile(course.metadata._filename);
-        url = `${baseUrl}/${courseId}`;
-    } else {
-        title = 'MindGym — Интерактивный тренажёр навыков';
-        description = 'Развивайте эмоциональный интеллект, коммуникацию, электробезопасность и другие навыки через диалог с ИИ.';
-        url = baseUrl;
-    }
-
-    document.title = title;
-    document.querySelector('meta[name="description"]').setAttribute('content', description);
-    document.querySelector('link[rel="canonical"]').setAttribute('href', url);
-    document.querySelector('meta[property="og:title"]').setAttribute('content', title);
-    document.querySelector('meta[property="og:description"]').setAttribute('content', description);
-    document.querySelector('meta[property="og:url"]').setAttribute('content', url);
-}
-
-// === Загрузка курсов ===
+// === Вспомогательные функции ===
 let courseIndex = [];
 
 function getCourseIdByFile(filename) {
     const entry = courseIndex.find(c => c.file === filename);
     return entry ? entry.id : 'unknown';
+}
+
+function getCourseIdForProgress(course) {
+    // Для локальных курсов используем _localId
+    return course._localId || getCourseIdByFile(course.metadata._filename);
 }
 
 function getCourseFileFromUrl() {
@@ -254,6 +223,59 @@ function getCourseFileFromUrl() {
     return null;
 }
 
+// === Общая инициализация сессии ===
+function startCourseSession(courseData, courseId, isLocal = false) {
+    if (!courseData.metadata?.title?.trim() || !courseData.modules || !courseData.exercises) {
+        alert('Неверный формат курса: проверьте обязательные поля.');
+        return;
+    }
+
+    landing.style.display = 'none';
+    demoSection.style.display = 'none';
+    chatContainer.style.display = 'flex';
+    chatMessages.innerHTML = '';
+
+    core.loadCourse(courseData);
+    courseTitle = courseData.metadata.title;
+    core.course = isLocal ? { ...courseData, _localId: courseId } : courseData;
+
+    const savedLog = loadChatLog(courseId, courseData.metadata.version);
+    if (savedLog) {
+        currentChatLog = savedLog;
+        currentChatLog.forEach(applyCommand);
+    } else {
+        const firstModule = courseData.modules[0];
+        const firstExercise = courseData.exercises.find(e => e.module_id === firstModule.id);
+        currentChatLog = [
+            { type: 'SHOW_MODULE_HEADER', moduleId: firstModule.id },
+            { type: 'SHOW_QUESTION', exerciseId: firstExercise.id }
+        ];
+        currentChatLog.forEach(applyCommand);
+    }
+
+    document.title = `${courseData.metadata.title} — MindGym`;
+    updateMetaTags(core.course);
+    sendBtn.disabled = false;
+}
+
+// === Загрузка официального курса ===
+async function loadSelectedCourse() {
+    const file = courseSelect.value;
+    if (!file) return;
+    const res = await fetch(`courses/${file}`);
+    const data = await res.json();
+    data.metadata._filename = file;
+    const courseId = getCourseIdByFile(file);
+    startCourseSession(data, courseId, false);
+}
+
+// === Запуск пользовательского курса ===
+function startCustomCourse(courseData, localCourseId = null) {
+    // Для курсов из файла (не из редактора) генерируем временный ID на сессию
+    const courseId = localCourseId || 'file_' + Date.now().toString(36);
+    startCourseSession(courseData, courseId, true);
+}
+
 // === Отправка сообщения ===
 async function sendMessage() {
     const text = userInput.value.trim();
@@ -261,7 +283,6 @@ async function sendMessage() {
 
     currentChatLog.push({ type: 'ADD_MESSAGE', role: 'user', text });
     applyCommand(currentChatLog[currentChatLog.length - 1]);
-
     userInput.value = '';
     sendBtn.disabled = true;
 
@@ -273,7 +294,6 @@ async function sendMessage() {
         return;
     }
 
-    // Добавляем "Думаю" с маркером
     currentChatLog.push({
         type: 'ADD_MESSAGE',
         role: 'coach',
@@ -282,7 +302,6 @@ async function sendMessage() {
     });
     applyCommand(currentChatLog[currentChatLog.length - 1]);
 
-    // Таймер
     let timeLeft = 25;
     const timerInterval = setInterval(() => {
         timeLeft--;
@@ -299,7 +318,6 @@ async function sendMessage() {
     try {
         const providerConfig = llmSelector.getConfig();
         const llm = new LLMClient(providerConfig, core.course);
-
         const result = await Promise.race([
             llm.validateWithFeedback(exercise, text, abortController.signal),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Таймаут')), 25000))
@@ -312,7 +330,6 @@ async function sendMessage() {
         if (result.isCorrect) {
             currentChatLog.push({ type: 'ADD_MESSAGE', role: 'coach', text: '✅ Верно!' });
             applyCommand(currentChatLog[currentChatLog.length - 1]);
-
             currentChatLog.push({ type: 'ADD_MESSAGE', role: 'coach', text: `📘 <strong>Как можно ответить:</strong><br>${exercise.expected_answer}` });
             applyCommand(currentChatLog[currentChatLog.length - 1]);
 
@@ -342,9 +359,8 @@ async function sendMessage() {
             sendBtn.disabled = false;
         }
 
-        const courseId = getCourseIdByFile(core.course.metadata._filename);
+        const courseId = getCourseIdForProgress(core.course);
         saveChatLog(courseId, core.course.metadata.version);
-
     } catch (error) {
         clearInterval(timerInterval);
         currentChatLog.push({ type: 'HIDE_THINKING' });
@@ -358,62 +374,42 @@ async function sendMessage() {
     }
 }
 
-// === Загрузка курса ===
-async function loadSelectedCourse() {
-    const file = courseSelect.value;
-    if (!file) return;
-
-    const res = await fetch(`courses/${file}`);
-    const data = await res.json();
-    core.loadCourse(data);
-    courseTitle = data.metadata.title;
-    data.metadata._filename = file;
-    core.course = data;
-
-    const courseId = getCourseIdByFile(file);
-    const savedLog = loadChatLog(courseId, data.metadata.version);
-
-    landing.style.display = 'none';
-    demoSection.style.display = 'none'; // 👈 скрываем демо
-    chatContainer.style.display = 'flex';
-    chatMessages.innerHTML = '';
-
-    // Показываем кнопку сброса
-    document.getElementById('resetProgress').style.display = 'flex';
-
-    if (savedLog) {
-        currentChatLog = savedLog;
-        currentChatLog.forEach(applyCommand);
-    } else {
-        currentChatLog = [];
-        const firstModule = data.modules[0];
-        const firstExercise = core.getCurrentExercise();
-
-        currentChatLog.push({ type: 'SHOW_MODULE_HEADER', moduleId: firstModule.id });
-        currentChatLog.push({ type: 'SHOW_QUESTION', exerciseId: firstExercise.id });
-
-        currentChatLog.forEach(applyCommand);
-    }
-
-    updateMetaTags(core.course);
-    sendBtn.disabled = false;
-}
-
 // === UI Handlers ===
 courseSelect.addEventListener('change', async (e) => {
-    if (e.target.value === '__upload__') {
+    const value = e.target.value;
+    if (value === '__create__') {
+        courseEditor.show();
+        landing.style.display = 'none';
+        chatContainer.style.display = 'none';
+        demoSection.style.display = 'none';
+        e.target.selectedIndex = 0;
+        courseActionsSelector?.setCourse(null);
+        return;
+    }
+    if (value.startsWith('__local__')) {
+        const id = value.replace('__local__', '');
+        const localCourses = JSON.parse(localStorage.getItem('mindgym_local_courses') || '[]');
+        const course = localCourses.find(c => c.id === id);
+        if (course) {
+            startCustomCourse(course.data, id);
+            courseActionsSelector?.setCourse('local', id);
+        }
+        demoSection.style.display = 'none';
+        e.target.selectedIndex = 0;
+        return;
+    }
+    if (value === '__upload__') {
         document.getElementById('courseFileInput').click();
         e.target.selectedIndex = 0;
-        // Скрываем кнопку при загрузке файла
-        document.getElementById('resetProgress').style.display = 'none';
-    } else if (e.target.value) {
-        // Показываем кнопку, если выбран курс
-        document.getElementById('resetProgress').style.display = 'flex';
-        await loadSelectedCourse();
-    } else {
-        // Скрываем, если ничего не выбрано
-        document.getElementById('resetProgress').style.display = 'none';
+        courseActionsSelector?.setCourse(null);
+        return;
     }
+    if (value) {
+        await loadSelectedCourse();
+        courseActionsSelector?.setCourse('official');
+        return;
+    }
+    courseActionsSelector?.setCourse(null);
 });
 
 document.getElementById('courseFileInput').addEventListener('change', (e) => {
@@ -436,6 +432,10 @@ document.addEventListener('drop', (e) => {
     e.preventDefault();
     const files = e.dataTransfer.files;
     if (files.length && files[0].name.endsWith('.json')) {
+        if (courseEditor && courseEditor.container.style.display !== 'none') {
+            courseEditor.loadFromFile(files[0]);
+            return;
+        }
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
@@ -449,48 +449,34 @@ document.addEventListener('drop', (e) => {
     }
 });
 
-function startCustomCourse(courseData) {
-    if (!courseData.metadata?.title || !courseData.modules || !courseData.exercises) {
-        alert('Неверный формат курса');
-        return;
+// === Метатеги ===
+function updateMetaTags(course = null) {
+    const baseUrl = 'https://krivich.github.io/MindGym';
+    let title, description, url;
+    if (course) {
+        title = `${course.metadata.title} — MindGym`;
+        description = course.metadata.description || `Интерактивный курс по ${course.metadata.title.toLowerCase()}.`;
+        const courseId = getCourseIdByFile(course.metadata._filename);
+        url = `${baseUrl}/${courseId}`;
+    } else {
+        title = 'MindGym — Интерактивный тренажёр навыков';
+        description = 'Развивайте эмоциональный интеллект, коммуникацию, электробезопасность и другие навыки через диалог с ИИ.';
+        url = baseUrl;
     }
-    landing.style.display = 'none';
-    chatContainer.style.display = 'flex';
-    core.loadCourse(courseData);
-    courseTitle = courseData.metadata.title;
-    core.course = courseData;
-    chatMessages.innerHTML = '';
-
-    const firstModule = courseData.modules[0];
-    const firstExercise = courseData.exercises.find(e => e.module_id === firstModule.id);
-
-    currentChatLog = [
-        { type: 'SHOW_MODULE_HEADER', moduleId: firstModule.id },
-        { type: 'SHOW_QUESTION', exerciseId: firstExercise.id }
-    ];
-    currentChatLog.forEach(applyCommand);
-
-    document.title = `${courseData.metadata.title} — MindGym`;
+    document.title = title;
+    document.querySelector('meta[name="description"]').setAttribute('content', description);
+    document.querySelector('link[rel="canonical"]').setAttribute('href', url);
+    document.querySelector('meta[property="og:title"]').setAttribute('content', title);
+    document.querySelector('meta[property="og:description"]').setAttribute('content', description);
+    document.querySelector('meta[property="og:url"]').setAttribute('content', url);
 }
 
-// В обработчике клика по логотипу (возврат на лендинг):
-document.getElementById('appLogo').addEventListener('click', () => {
-    chatContainer.style.display = 'none';
-    landing.style.display = 'flex';
-    demoSection.style.display = 'block'; // 👈 показываем демо
-    chatMessages.innerHTML = '';
-    courseSelect.selectedIndex = 0;
-    updateMetaTags();
-    document.getElementById('resetProgress').style.display = 'none';
-});
-
-document.getElementById('resetProgress').addEventListener('click', () => {
+// === Обработчики действий ===
+async function handleResetProgress() {
     if (!core.course) return;
-
     if (confirm('Сбросить прогресс курса?\nВся история будет удалена.')) {
-        const courseId = getCourseIdByFile(core.course.metadata._filename);
+        const courseId = getCourseIdForProgress(core.course);
         clearChatLog(courseId);
-
         const firstModule = core.course.modules[0];
         const firstExercise = core.getCurrentExercise();
         chatMessages.innerHTML = '';
@@ -500,17 +486,86 @@ document.getElementById('resetProgress').addEventListener('click', () => {
         ];
         currentChatLog.forEach(applyCommand);
     }
-});
+}
 
-sendBtn.addEventListener('click', sendMessage);
-userInput.addEventListener('input', () => {
-    sendBtn.disabled = userInput.value.trim() === '';
-});
-userInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (!sendBtn.disabled) sendMessage();
+async function handleShare() {
+    const url = window.location.href;
+    try {
+        if (navigator.share) {
+            await navigator.share({ title: document.title, url });
+        } else {
+            await navigator.clipboard.writeText(url);
+            alert('Ссылка скопирована!');
+        }
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            alert('Не удалось поделиться. Скопируйте ссылку вручную.');
+        }
     }
+}
+
+// === Инициализация ===
+let llmSelector;
+let courseEditor;
+let courseActionsSelector;
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('demoSection')) {
+        createDemoPlayer('demoSection', UNIVERSAL_DEMO_LOG, {
+            typingDuration: 3000,
+            messageDelay: 1800
+        });
+    }
+    llmSelector = createLLMProviderSelector('llmProviderContainer');
+    courseEditor = new CourseEditor('courseEditorContainer');
+    courseEditor.setOnLaunch((courseData, editingId) => {
+        courseEditor.hide();
+        const localCourses = JSON.parse(localStorage.getItem('mindgym_local_courses') || '[]');
+        let newId = editingId;
+        if (editingId) {
+            const idx = localCourses.findIndex(c => c.id === editingId);
+            if (idx !== -1) {
+                localCourses[idx] = { id: editingId, title: courseData.metadata.title, data: courseData };
+                localStorage.setItem('mindgym_local_courses', JSON.stringify(localCourses));
+                const opt = Array.from(courseSelect.options).find(o => o.value === `__local__${editingId}`);
+                if (opt) opt.textContent = `💾 ${courseData.metadata.title}`;
+            }
+        } else {
+            newId = Date.now().toString();
+            localCourses.push({ id: newId, title: courseData.metadata.title, data: courseData });
+            localStorage.setItem('mindgym_local_courses', JSON.stringify(localCourses));
+            const opt = document.createElement('option');
+            opt.value = `__local__${newId}`;
+            opt.textContent = `💾 ${courseData.metadata.title}`;
+            courseSelect.appendChild(opt);
+        }
+        startCustomCourse(courseData, newId);
+    });
+
+    courseActionsSelector = createCourseActionsSelector('courseMenuBtn');
+    courseActionsSelector.setOnAction(async (action, courseId) => {
+        if (action === 'reset') {
+            await handleResetProgress();
+        } else if (action === 'share') {
+            await handleShare();
+        } else if (action === 'edit') {
+            const localCourses = JSON.parse(localStorage.getItem('mindgym_local_courses') || '[]');
+            const course = localCourses.find(c => c.id === courseId);
+            if (course) {
+                courseEditor.show();
+                courseEditor.loadCourseData(course.data, courseId);
+                chatContainer.style.display = 'none';
+                landing.style.display = 'none';
+            }
+        } else if (action === 'delete') {
+            if (confirm('Удалить курс навсегда?')) {
+                let localCourses = JSON.parse(localStorage.getItem('mindgym_local_courses') || '[]');
+                localCourses = localCourses.filter(c => c.id !== courseId);
+                localStorage.setItem('mindgym_local_courses', JSON.stringify(localCourses));
+                location.reload();
+            }
+        }
+    });
 });
 
 const UNIVERSAL_DEMO_LOG = {
@@ -527,24 +582,30 @@ const UNIVERSAL_DEMO_LOG = {
     ]
 };
 
-// Инициализация демо после загрузки страницы
-let llmSelector;
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('demoSection')) {
-        createDemoPlayer('demoSection', UNIVERSAL_DEMO_LOG, {
-            typingDuration: 3000,
-            messageDelay: 1800
-        });
-    }
-    llmSelector = createLLMProviderSelector('llmProviderContainer');
+document.getElementById('appLogo').addEventListener('click', () => {
+    chatContainer.style.display = 'none';
+    landing.style.display = 'flex';
+    demoSection.style.display = 'block';
+    chatMessages.innerHTML = '';
+    courseSelect.selectedIndex = 0;
+    updateMetaTags();
 });
 
-// === Инициализация ===
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('input', () => {
+    sendBtn.disabled = userInput.value.trim() === '';
+});
+userInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!sendBtn.disabled) sendMessage();
+    }
+});
+
+// === Загрузка индекса курсов ===
 (async () => {
     const res = await fetch('courses/index.json');
     courseIndex = await res.json();
-
     courseIndex.forEach(course => {
         const opt = document.createElement('option');
         opt.value = course.file;
@@ -552,10 +613,23 @@ document.addEventListener('DOMContentLoaded', () => {
         courseSelect.appendChild(opt);
     });
 
+    const localCourses = JSON.parse(localStorage.getItem('mindgym_local_courses') || '[]');
+    localCourses.forEach(course => {
+        const opt = document.createElement('option');
+        opt.value = `__local__${course.id}`;
+        opt.textContent = `💾 ${course.title}`;
+        courseSelect.appendChild(opt);
+    });
+
     const uploadOption = document.createElement('option');
     uploadOption.value = '__upload__';
     uploadOption.textContent = '📁 Загрузить из файла…';
     courseSelect.appendChild(uploadOption);
+
+    const createOption = document.createElement('option');
+    createOption.value = '__create__';
+    createOption.textContent = '✨ Создать курс с ИИ';
+    courseSelect.appendChild(createOption);
 
     const courseFileFromUrl = getCourseFileFromUrl();
     if (courseFileFromUrl) {

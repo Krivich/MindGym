@@ -382,6 +382,57 @@
             color: var(--primary);
         }
 
+        .menu-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            margin: 0 8px;
+        }
+        .menu-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .course-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            z-index: 100;
+            display: none;
+        }
+        .course-menu.show {
+            display: block;
+        }
+
+        .course-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 16px;
+            text-align: left;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            cursor: pointer;
+            color: var(--text);
+        }
+        .course-menu button:hover {
+            background: var(--card);
+        }
+
         /* Адаптивность */
         @media (max-width: 768px) {
             .landing {
@@ -597,6 +648,232 @@
             display: none !important;
         }
     </style>
+    <style>
+        /* === Course Editor Styles === */
+        .editor-container {
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+            padding: 24px;
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin: 24px auto;
+            max-width: 900px;
+        }
+        .editor-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .editor-form {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+        .floating-input {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .floating-input .editor-input,
+        .floating-input .editor-textarea {
+            width: 100%;
+            padding: 16px 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            background: white; /* ← важно: белый фон у полей */
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .floating-input .editor-input:focus,
+        .floating-input .editor-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: var(--focus-shadow);
+        }
+
+        .floating-input label {
+            position: absolute;
+            top: 16px;
+            left: 14px;
+            color: var(--text-light);
+            font-size: 16px;
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        /* Состояние: поле в фокусе → лейбл синий */
+        .floating-input .editor-input:focus + label,
+        .floating-input .editor-textarea:focus + label {
+            top: -10px;
+            left: 10px;
+            font-size: 12px;
+            color: var(--primary);
+            background: white;
+            padding: 0 4px;
+        }
+
+        /* Состояние: поле заполнено, но НЕ в фокусе → лейбл серый */
+        .floating-input .editor-input:not(:focus):not(:placeholder-shown) + label,
+        .floating-input .editor-textarea:not(:focus):not(:placeholder-shown) + label {
+            top: -10px;
+            left: 10px;
+            font-size: 12px;
+            color: var(--text-light);
+            background: white;
+            padding: 0 4px;
+        }
+        /* Селекты: лейбл всегда наверху */
+        .floating-input--select label {
+            top: -10px;
+            left: 10px;
+            font-size: 12px;
+            color: var(--text-light);
+            background: white;
+            padding: 0 4px;
+            pointer-events: none;
+        }
+
+        .floating-input--select .editor-select {
+            width: 100%;
+            padding: 16px 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            background: white;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 12px;
+        }
+        .module-card {
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .exercise-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .module-header {
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: flex-start;
+        }
+        .remove-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .remove-btn:hover {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+        .editor-btn {
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+        }
+        .editor-btn.primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+        }
+        .editor-actions-bottom {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        .editor-ai {
+            padding: 20px;
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            background: #f0f7ff;
+            margin: 24px 0;
+        }
+        .editor-ai h3 {
+            margin: 0 0 16px;
+            color: var(--primary);
+        }
+        /* Валидация */
+        .required-star {
+            color: #e53935;
+            margin-left: 4px;
+        }
+        .floating-input.invalid .editor-input,
+        .floating-input.invalid .editor-textarea,
+        .floating-input.invalid .editor-select {
+            border-color: #e53935 !important;
+            box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.2) !important;
+        }
+        .floating-input.invalid label {
+            color: #e53935 !important;
+        }
+        .editor-error {
+            color: #e53935;
+            font-size: 14px;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .exercise-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: flex-start;
+        }
+    </style>
+    <style>
+        /* === Course Actions Selector === */
+        .course-menu {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            min-width: 200px;
+            white-space: nowrap;
+        }
+        .course-menu-item {
+            display: block;
+            width: 100%;
+            padding: 10px 16px;
+            text-align: left;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            cursor: pointer;
+            color: var(--text);
+        }
+        .course-menu-item:hover {
+            background: var(--card);
+        }
+    </style>
 </head>
 <body>
 <div class="header">
@@ -610,8 +887,7 @@
         <option value="" disabled selected>Выберите курс</option>
     </select>
 
-    <!-- Кнопка сброса -->
-    <button class="reset-btn" id="resetProgress" title="Сбросить прогресс курса" style="display: none;">↺</button>
+    <button class="menu-btn" id="courseMenuBtn" title="Действия с курсом" style="display: none;">⋮</button>
 
     <div class="input-group">
         <div id="llmProviderContainer"></div>
@@ -677,6 +953,9 @@
         </button>
     </div>
 </div>
+
+<!-- Course Editor -->
+<div class="editor-container" id="courseEditorContainer"></div>
 
 <script src="mindgym-core.js"></script>
 <script type="module" src="mindgym-web.js"></script>
