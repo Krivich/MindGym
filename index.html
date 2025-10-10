@@ -22,6 +22,7 @@
     <meta property="og:type" content="website" />
     <link id="seo-alternate-placeholder" rel="alternate" href="#" />
     <style>
+        /* === 1. Общие переменные и сброс === */
         :root {
             --bg: #ffffff;
             --text: #111111;
@@ -45,29 +46,28 @@
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
-            padding: 24px;
+            padding: 16px;
             font-size: 16px;
             line-height: 1.6;
-            overflow-y: auto; /* разрешить скролл */
         }
 
+        /* === 2. Хедер и навигация === */
         .header {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             align-items: center;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
         }
 
         .app-title {
             font-weight: 700;
-            font-size: 24px;
+            font-size: 22px;
             color: var(--primary);
             letter-spacing: -0.4px;
             cursor: pointer;
             transition: color 0.2s;
         }
-
         .app-title:hover {
             color: #5a52d5;
         }
@@ -75,10 +75,10 @@
         .input-group {
             position: relative;
             flex: 1;
-            min-width: 220px;
+            min-width: 180px;
         }
 
-        input, select {
+        select, input {
             width: 100%;
             padding: 10px 14px;
             border: 1px solid var(--border);
@@ -88,300 +88,21 @@
             font-family: 'Inter', sans-serif;
             transition: box-shadow 0.2s, border-color 0.2s;
         }
-
-        input:focus, select:focus {
+        select:focus, input:focus {
             outline: none;
             border-color: #c0bfff;
             box-shadow: var(--focus-shadow);
         }
-
-        .clear-key {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--text-light);
-            cursor: pointer;
-            font-size: 20px;
-            width: 20px;
-            height: 20px;
-            display: none;
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 12px;
+            padding-right: 36px; /* чтобы текст не налезал на стрелку */
         }
-
-        .input-group:focus-within .clear-key {
-            display: block;
-        }
-
-        /* === Лендинг — прокручиваемый и адаптивный === */
-        .landing {
-            padding: 48px;
-            position: relative;
-            overflow: hidden;
-            min-height: 60vh;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-
-        .landing-content {
-            position: relative;
-            z-index: 1;
-            text-align: left;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .landing-content .app-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        .tagline {
-            font-size: 28px;
-            font-weight: 300;
-            line-height: 1.3;
-            margin: 0 0 24px;
-            color: var(--text);
-            letter-spacing: -0.5px;
-        }
-
-        .core-idea {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--primary);
-            margin: 0 0 28px;
-            letter-spacing: -0.3px;
-        }
-
-        .what-is {
-            font-size: 18px;
-            font-weight: 500;
-            margin: 0 0 20px;
-            color: var(--text);
-        }
-
-        .benefits {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 28px;
-        }
-
-        .benefits li {
-            position: relative;
-            padding-left: 32px;
-            margin-bottom: 16px;
-            font-size: 17px;
-            font-weight: 400;
-            color: var(--text);
-        }
-
-        .benefits li::before {
-            position: absolute;
-            left: 0;
-            top: 2px;
-            font-size: 18px;
-        }
-
-        .scope {
-            font-size: 18px;
-            font-weight: 400;
-            margin: 0 0 28px;
-            color: var(--text);
-            line-height: 1.4;
-        }
-
-        .open-source {
-            margin: 0;
-            color: var(--text-light);
-            font-size: 15px;
-        }
-
-        .open-source a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .open-source a:hover {
-            text-decoration: underline;
-        }
-
-        .instruction {
-            color: var(--text-light);
-            font-style: italic;
-            font-size: 15px;
-            margin: 0 0 24px;
-        }
-        .instruction small {
-            color: var(--text-light);
-            font-weight: 400;
-        }
-
-        /* === Чат === */
-        .chat-container {
-            background: var(--card);
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 180px);
-            padding: 16px;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            padding: 8px 0;
-        }
-
-        .message {
-            display: flex;
-            gap: 12px;
-        }
-
-        .message.coach {
-            justify-content: flex-start;
-        }
-
-        .message.user {
-            justify-content: flex-end;
-        }
-
-        .message-bubble {
-            padding: 12px 16px;
-            border-radius: 18px;
-            line-height: 1.4;
-            max-width: 80%;
-            word-wrap: break-word;
-            font-family: 'Inter', sans-serif;
-            font-size: 15px;
-        }
-
-        .message.coach .message-bubble {
-            background: var(--coach-bg);
-            border-top-left-radius: 4px;
-        }
-
-        .message.user .message-bubble {
-            background: var(--user-bg);
-            color: var(--primary);
-            border-top-right-radius: 4px;
-        }
-
-        .thinking {
-            color: var(--text-light);
-            font-style: italic;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .timer {
-            font-size: 12px;
-            color: var(--text-light);
-            margin-left: 4px;
-        }
-
-        /* Заголовок темы */
-        .module-header {
-            text-align: center;
-            margin: 24px 0;
-            width: 100%;
-        }
-        .module-title {
-            font-weight: 700;
-            font-size: 18px;
-            color: var(--primary);
-            margin-bottom: 6px;
-        }
-        .module-description {
-            font-size: 14px;
-            color: var(--text-light);
-            font-style: italic;
-        }
-        .module-divider {
-            height: 1px;
-            background: var(--border);
-            margin: 12px auto;
-            width: 60px;
-        }
-
-        /* Ввод */
-        .chat-input {
-            display: flex;
-            gap: 12px;
-            padding-top: 16px;
-            align-items: center;
-        }
-
-        .chat-input textarea {
-            flex: 1;
-            padding: 12px 16px;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            resize: none;
-            font-size: 15px;
-            min-height: 20px;
-            max-height: 100px;
-            outline: none;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .chat-input textarea:focus {
-            border-color: transparent;
-            box-shadow: var(--focus-shadow);
-        }
-
-        .send-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .send-btn svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        .reset-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-light);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            flex-shrink: 0;
-            margin: 0 8px;
-        }
-
-        .reset-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
         .menu-btn {
             width: 36px;
             height: 36px;
@@ -396,67 +117,75 @@
             font-size: 18px;
             flex-shrink: 0;
             margin: 0 8px;
+            transition: border-color 0.2s, color 0.2s;
         }
         .menu-btn:hover {
             border-color: var(--primary);
             color: var(--primary);
         }
 
-        .course-menu {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            z-index: 100;
-            display: none;
+        /* === 3. Лендинг === */
+        .landing {
+            padding: 32px 16px;
+            position: relative;
+            overflow: hidden;
+            min-height: 60vh;
+            max-width: 800px;
+            margin: 0 auto;
         }
-        .course-menu.show {
-            display: block;
-        }
-
-        .course-menu button {
-            display: block;
-            width: 100%;
-            padding: 10px 16px;
+        .landing-content {
             text-align: left;
-            background: none;
-            border: none;
-            font-family: 'Inter', sans-serif;
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .tagline {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 300;
+            line-height: 1.4;
+            margin: 0 0 20px;
+            letter-spacing: -0.4px;
+        }
+        .core-idea {
+            text-align: center;
+            font-size: 23px;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 0 0 24px;
+        }
+        .what-is, .scope {
+            font-size: 18px;
+            margin: 0 0 20px;
+        }
+        .benefits {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 24px;
+        }
+        .benefits li {
+            margin-bottom: 12px;
+            margin-left: 1em;
+            font-size: 17px;
+        }
+        .instruction {
+            color: var(--text-light);
+            font-style: italic;
             font-size: 15px;
-            cursor: pointer;
-            color: var(--text);
+            margin: 0 0 20px;
         }
-        .course-menu button:hover {
-            background: var(--card);
+        .open-source {
+            color: var(--text-light);
+            font-size: 15px;
         }
-
-        /* Адаптивность */
-        @media (max-width: 768px) {
-            .landing {
-                padding: 24px;
-                min-height: auto;
-            }
-            .tagline {
-                font-size: 24px;
-            }
-            .landing-content {
-                text-align: center;
-            }
-            .benefits li {
-                padding-left: 0;
-                text-align: center;
-            }
-            .benefits li::before {
-                position: static;
-                margin-right: 8px;
-            }
-            .chat-container {
-                height: calc(100vh - 160px);
-                padding: 12px;
-            }
+        .open-source a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .open-source a:hover {
+            text-decoration: underline;
         }
 
         .brain-bg {
@@ -471,49 +200,29 @@
             pointer-events: none;
             z-index: 0;
         }
-
         .brain-icon {
-            /* Адаптивный размер: 80% ширины экрана, но не больше 400px */
             width: 80vmin;
             height: 80vmin;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 60vmin; /* масштабируется пропорционально */
-            opacity: 0.03; /* заметно, но не отвлекает */
+            font-size: 60vmin;
+            opacity: 0.03;
             animation: brainPulse 6s infinite ease-in-out;
         }
-
         @keyframes brainPulse {
-            0%, 100% {
-                opacity: 0.04;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.02;
-                transform: scale(1.02);
-            }
+            0%, 100% { opacity: 0.04; transform: scale(1); }
+            50% { opacity: 0.02; transform: scale(1.02); }
         }
 
-        select {
-            padding-right: 30px !important;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background: var(--card) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") no-repeat;
-            background-position: right 12px center;
-            background-size: 12px;
-        }
-    </style>
-    <style>
+        /* === 4. Демо-панель === */
         .demo-section {
-            height: 60vh;
+            height: 50vh;
             position: relative;
-            max-width: 600px; /* как у .landing-content */
-            margin: 40px auto; /* центрирование */
+            max-width: 600px;
+            margin: 32px auto;
             width: 100%;
         }
-
         .demo-chat-container {
             background: var(--card);
             border-radius: 16px;
@@ -524,7 +233,6 @@
             padding: 16px;
             overflow: hidden;
         }
-
         .demo-overlay {
             position: absolute;
             top: 0;
@@ -540,21 +248,13 @@
             opacity: 1;
             transition: opacity 0.3s;
         }
-
         .demo-overlay.hidden {
             opacity: 0;
             pointer-events: none;
         }
-
         .play-icon {
             font-size: 48px;
             color: var(--primary);
-        }
-
-        .typing-placeholder {
-            color: var(--text-light);
-            padding: 12px 16px;
-            font-style: italic;
         }
         .demo-title {
             text-align: center;
@@ -571,24 +271,152 @@
             resize: none;
             font-family: 'Inter', sans-serif;
             font-size: 15px;
-            min-height: 60px; /* фиксированная высота */
+            min-height: 60px;
             background: var(--card);
             color: var(--text);
             opacity: 0.7;
         }
-    </style>
-    <style>
+
+        /* === 5. Чат === */
+        .chat-container {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            margin-bottom: 16px;
+            max-height: 60vh;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 4px 0;
+        }
+        .message {
+            display: flex;
+            gap: 12px;
+        }
+        .message.coach {
+            justify-content: flex-start;
+        }
+        .message.user {
+            justify-content: flex-end;
+        }
+        .message-bubble {
+            padding: 10px 14px;
+            border-radius: 18px;
+            line-height: 1.4;
+            max-width: 75%;
+            word-wrap: break-word;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+        }
+        .message.coach .message-bubble {
+            background: var(--coach-bg);
+            border-top-left-radius: 4px;
+        }
+        .message.user .message-bubble {
+            background: var(--user-bg);
+            color: var(--primary);
+            border-top-right-radius: 4px;
+        }
+        .thinking {
+            color: var(--text-light);
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .timer {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Заголовок модуля */
+        .module-header {
+            text-align: center;
+            margin: 20px 0;
+            width: 100%;
+        }
+        .module-title {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+        .module-description {
+            font-size: 14px;
+            color: var(--text-light);
+            font-style: italic;
+        }
+        .module-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 10px auto;
+            width: 60px;
+        }
+
+        /* Ввод ответа */
+        .chat-input {
+            display: flex;
+            gap: 12px;
+            padding-top: 12px;
+            align-items: flex-end;
+        }
+        .chat-input textarea {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            resize: none;
+            font-size: 14px;
+            min-height: 40px;
+            max-height: 100px;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .chat-input textarea:focus {
+            border-color: transparent;
+            box-shadow: var(--focus-shadow);
+        }
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .send-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* === 6. Выбор LLM-провайдера === */
         .llm-control {
             position: relative;
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 0 14px;
+            gap: 10px;
+            padding: 0 12px;
             border: 1px solid var(--border);
             border-radius: 12px;
             background: var(--card);
-            min-width: 280px;
-            height: 44px;
+            min-width: 240px;
+            height: 42px;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
         .llm-control:focus-within {
@@ -603,16 +431,16 @@
             border: none;
             background: transparent;
             font-family: 'Inter', sans-serif;
-            font-size: 15px;
+            font-size: 14px;
             color: var(--text);
             outline: none;
             padding: 0;
             flex: 1;
-            min-width: 80px;
+            min-width: 60px;
         }
         .llm-provider-select {
             flex-shrink: 0;
-            max-width: 160px;
+            max-width: 140px;
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
@@ -629,13 +457,9 @@
             align-items: center;
             justify-content: center;
             color: var(--text-light);
-            font-size: 18px;
+            font-size: 16px;
             flex-shrink: 0;
-        }
-        .llm-help-link {
             text-decoration: none;
-        }
-        .llm-clear-btn {
             background: none;
             border: none;
             cursor: pointer;
@@ -644,156 +468,155 @@
         .llm-clear-btn:hover {
             color: var(--primary);
         }
-        [hidden] {
-            display: none !important;
-        }
-    </style>
-    <style>
-        /* === Course Editor Styles === */
+
+        /* === 7. Редактор курсов === */
         .editor-container {
             display: none;
             flex-direction: column;
-            gap: 24px;
-            padding: 24px;
+            gap: 20px;
+            padding: 16px;
             background: var(--card);
             border-radius: 16px;
             box-shadow: var(--shadow);
-            margin: 24px auto;
+            margin: 16px auto;
             max-width: 900px;
         }
         .editor-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: var(--primary);
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             text-align: center;
         }
-        .editor-form {
+        .editor-form,
+        .editor-ai {
             background: white;
-            padding: 24px;
+            padding: 16px;
             border-radius: 16px;
-            margin-bottom: 24px;
+        }
+        .editor-ai {
+            border: none;
+            background: #f8f9ff;
+            margin: 16px 0;
+        }
+        .editor-ai h3 {
+            margin: 0 0 14px;
+            color: var(--primary);
         }
         .floating-input {
             position: relative;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
-
         .floating-input .editor-input,
-        .floating-input .editor-textarea {
+        .floating-input .editor-textarea,
+        .floating-input .editor-select {
             width: 100%;
-            padding: 16px 14px;
+            padding: 12px 12px;
             border: 1px solid var(--border);
             border-radius: 12px;
             font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            background: white; /* ← важно: белый фон у полей */
+            font-size: 14px;
+            background: white;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-
         .floating-input .editor-input:focus,
-        .floating-input .editor-textarea:focus {
+        .floating-input .editor-textarea:focus,
+        .floating-input .editor-select:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: var(--focus-shadow);
         }
-
         .floating-input label {
             position: absolute;
-            top: 16px;
-            left: 14px;
+            top: 12px;
+            left: 12px;
             color: var(--text-light);
-            font-size: 16px;
+            font-size: 14px;
             pointer-events: none;
             transition: all 0.2s ease;
         }
-
-        /* Состояние: поле в фокусе → лейбл синий */
+        /* Floating label: фокус или заполнено */
         .floating-input .editor-input:focus + label,
-        .floating-input .editor-textarea:focus + label {
-            top: -10px;
-            left: 10px;
-            font-size: 12px;
-            color: var(--primary);
-            background: white;
-            padding: 0 4px;
-        }
-
-        /* Состояние: поле заполнено, но НЕ в фокусе → лейбл серый */
+        .floating-input .editor-textarea:focus + label,
         .floating-input .editor-input:not(:focus):not(:placeholder-shown) + label,
         .floating-input .editor-textarea:not(:focus):not(:placeholder-shown) + label {
             top: -10px;
-            left: 10px;
+            left: 8px;
             font-size: 12px;
-            color: var(--text-light);
             background: white;
             padding: 0 4px;
         }
-        /* Селекты: лейбл всегда наверху */
+        /* Селекты: лейбл всегда сверху */
         .floating-input--select label {
             top: -10px;
-            left: 10px;
+            left: 8px;
             font-size: 12px;
-            color: var(--text-light);
             background: white;
             padding: 0 4px;
-            pointer-events: none;
         }
-
         .floating-input--select .editor-select {
-            width: 100%;
-            padding: 16px 14px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            background: white;
-            appearance: none;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
             background-repeat: no-repeat;
-            background-position: right 12px center;
+            background-position: right 10px center;
             background-size: 12px;
         }
         .module-card {
             background: #fafafa;
             border-radius: 12px;
-            padding: 20px;
-            margin: 20px 0;
+            padding: 14px;
+            margin: 16px 0;
+            position: relative;
+            overflow: visible;
         }
         .exercise-card {
             background: white;
             border-radius: 12px;
-            padding: 16px;
-            margin: 16px 0;
+            padding: 14px;
+            margin: 12px 0;
+            position: relative;
+            overflow: visible;
         }
-        .module-header {
-            gap: 12px;
-            margin-bottom: 16px;
+        .module-header,
+        .exercise-header {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
             align-items: flex-start;
+            padding-right: 32px;
+            margin-bottom: 12px;
         }
         .remove-btn {
-            width: 32px;
-            height: 32px;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            border: 1px solid var(--border);
-            background: transparent;
+            border: 2px solid white;
+            background: white;
             color: var(--text-light);
-            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 3;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
-            transition: all 0.2s;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
         }
         .remove-btn:hover {
-            border-color: #ff6b6b;
             color: #ff6b6b;
+            transform: scale(1.15);
+        }
+        /* Селект сложности — занимает всю доступную ширину */
+        .exercise-header .floating-input--select {
+            flex: 1;
+            margin-right: 0;
         }
         .editor-btn {
-            padding: 10px 16px;
+            padding: 8px 14px;
             border-radius: 12px;
             font-family: 'Inter', sans-serif;
-            font-size: 15px;
+            font-size: 14px;
             cursor: pointer;
             border: 1px solid var(--border);
             background: var(--card);
@@ -806,22 +629,10 @@
         }
         .editor-actions-bottom {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             justify-content: center;
-            margin-top: 16px;
+            flex-wrap: wrap;
         }
-        .editor-ai {
-            padding: 20px;
-            border: 1px dashed var(--border);
-            border-radius: 12px;
-            background: #f0f7ff;
-            margin: 24px 0;
-        }
-        .editor-ai h3 {
-            margin: 0 0 16px;
-            color: var(--primary);
-        }
-        /* Валидация */
         .required-star {
             color: #e53935;
             margin-left: 4px;
@@ -841,22 +652,17 @@
             margin-top: 8px;
             text-align: center;
         }
-        .exercise-header {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            align-items: flex-start;
-        }
-    </style>
-    <style>
-        /* === Course Actions Selector === */
+
+        /* === 8. Меню действий с курсом === */
         .course-menu {
+            position: absolute;
             background: white;
             border: 1px solid var(--border);
             border-radius: 12px;
             box-shadow: var(--shadow);
             min-width: 200px;
-            white-space: nowrap;
+            z-index: 100;
+            display: none;
         }
         .course-menu-item {
             display: block;
@@ -872,6 +678,100 @@
         }
         .course-menu-item:hover {
             background: var(--card);
+        }
+
+        /* === 9. Адаптивность (мобильные устройства) === */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+                font-size: 15px;
+            }
+            .header {
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+            .app-title {
+                font-size: 20px;
+            }
+            .llm-control {
+                flex-wrap: wrap;
+                height: auto;
+                padding: 8px;
+                gap: 6px;
+            }
+            .llm-provider-select,
+            .llm-model-input,
+            .llm-url-input,
+            .llm-key-input,
+            .llm-placeholder {
+                width: 100%;
+                min-width: auto;
+                font-size: 14px;
+                padding: 6px 0;
+            }
+            .llm-provider-select {
+                max-width: none;
+            }
+
+            /* Лендинг */
+            .landing {
+                padding: 20px 12px;
+                min-height: auto;
+            }
+            .tagline {
+                font-size: 20px;
+            }
+
+            /* Чат */
+            .chat-container {
+                padding: 10px;
+                margin-bottom: 12px;
+            }
+            .message-bubble {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+            .chat-input textarea {
+                font-size: 14px;
+                padding: 10px 12px;
+                min-height: 44px;
+            }
+            .send-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            /* Редактор */
+            .editor-container {
+                padding: 12px;
+                margin: 12px auto;
+            }
+            .editor-ai {
+                padding: 16px;
+            }
+            .floating-input .editor-input,
+            .floating-input .editor-textarea {
+                font-size: 14px;
+                padding: 12px 10px;
+            }
+            .floating-input label {
+                font-size: 14px;
+                top: 12px;
+                left: 10px;
+            }
+            .floating-input .editor-input:focus + label,
+            .floating-input .editor-textarea:focus + label,
+            .floating-input .editor-input:not(:focus):not(:placeholder-shown) + label,
+            .floating-input .editor-textarea:not(:focus):not(:placeholder-shown) + label,
+            .floating-input--select label {
+                font-size: 12px;
+                top: -10px;
+                left: 6px;
+            }
+            .editor-btn {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>

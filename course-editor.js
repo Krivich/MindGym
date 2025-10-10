@@ -87,17 +87,15 @@ export class CourseEditor {
                 this.reorderModules(draggedId, module.id);
             });
             moduleEl.innerHTML = `
-                <div class="module-header">
-                    <div class="floating-input" style="flex:1; margin-bottom:0;">
-                        <input type="text" class="module-title-input editor-input" placeholder=" " value="${this.escape(module.title)}" data-id="${module.id}">
-                        <label>Название модуля</label>
-                    </div>
-                    <button class="remove-btn" data-id="${module.id}" title="Удалить">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
+                <button class="remove-btn" data-id="${module.id}" title="Удалить">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="floating-input">
+                    <input type="text" class="module-title-input editor-input" placeholder=" " value="${this.escape(module.title)}" data-id="${module.id}">
+                    <label>Название модуля</label>
                 </div>
                 <div class="floating-input">
                     <textarea class="module-desc-input editor-textarea" placeholder=" " data-id="${module.id}">${this.escape(module.description)}</textarea>
@@ -118,23 +116,12 @@ export class CourseEditor {
             const exEl = document.createElement('div');
             exEl.className = 'exercise-card';
             exEl.innerHTML = `
-                <div class="exercise-header">
-                    <div class="floating-input floating-input--select" style="flex:1;">
-                        <select class="editor-select" data-id="${ex.id}">
-                            <option value="1" ${ex.difficulty === 1 ? 'selected' : ''}>1 — Простое</option>
-                            <option value="2" ${ex.difficulty === 2 ? 'selected' : ''}>2 — Среднее</option>
-                            <option value="3" ${ex.difficulty === 3 ? 'selected' : ''}>3 — Сложное</option>
-                        </select>
-                        <label>Сложность</label>
-                    </div>
-                    <button class="remove-btn ex-remove" data-id="${ex.id}" title="Удалить упражнение">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                </div>
-                <!-- остальные поля: ситуация, ответ и т.д. -->
+                <button class="remove-btn ex-remove" data-id="${ex.id}" title="Удалить упражнение">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
                 <div class="floating-input">
                     <textarea class="ex-prompt editor-textarea" placeholder=" " data-id="${ex.id}">${this.escape(ex.prompt)}</textarea>
                     <label>Ситуация</label>
@@ -147,6 +134,14 @@ export class CourseEditor {
                     <textarea class="ex-feedback editor-textarea" placeholder=" " data-id="${ex.id}">${this.escape(ex.feedback_on_error)}</textarea>
                     <label>Подсказка при ошибке</label>
                 </div>
+                <div class="floating-input floating-input--select" style="flex:1;">
+                    <select class="editor-select" data-id="${ex.id}">
+                        <option value="1" ${ex.difficulty === 1 ? 'selected' : ''}>1 — Простое</option>
+                        <option value="2" ${ex.difficulty === 2 ? 'selected' : ''}>2 — Среднее</option>
+                        <option value="3" ${ex.difficulty === 3 ? 'selected' : ''}>3 — Сложное</option>
+                    </select>
+                    <label>Сложность</label>
+                </div>
             `;
             list.appendChild(exEl);
         });
@@ -154,22 +149,22 @@ export class CourseEditor {
 
     renderAISection() {
         this.container.querySelector('#editorAiSection').innerHTML = `
-            <div class="editor-ai">
+            
                 <h3>✨ Создать курс с ИИ</h3>
                 <div class="floating-input">
                     <textarea id="aiPrompt" class="editor-textarea" placeholder=" ">Опишите тему, цель, аудиторию...</textarea>
                     <label>Описание курса для ИИ</label>
                 </div>
                 <button class="editor-btn primary" id="generateWithAI">Сгенерировать</button>
-            </div>
+            
         `;
     }
 
     renderActionsBottom() {
         this.container.querySelector('#editorActionsBottom').innerHTML = `
             <div class="editor-actions-bottom">
-                <button class="editor-btn" id="importJson">Импорт JSON</button>
-                <button class="editor-btn primary" id="exportJson">Скачать JSON</button>
+<button class="editor-btn" id="importJson">📥 Импорт</button>
+<button class="editor-btn primary" id="exportJson">📤 Экспорт</button>
                 <button class="editor-btn primary" id="launchCourse">▶️ Запустить курс</button>
             </div>
         `;
@@ -287,9 +282,8 @@ export class CourseEditor {
             }
         });
 
-        // Генерация ИИ — заглушка
-        this.container.querySelector('#generateWithAI').addEventListener('click', () => {
-            alert('Генерация через ИИ будет реализована отдельно.');
+        this.container.querySelector('#generateWithAI').addEventListener('click', async () => {
+            await this.generateWithAI();
         });
     }
 
@@ -419,5 +413,96 @@ export class CourseEditor {
         this.courseData = data;
         this.editingId = id; // запоминаем, что редактируем существующий
         this.renderForm();
+    }
+
+    async generateWithAI() {
+        const aiPromptEl = this.container.querySelector('#aiPrompt');
+        const userPrompt = aiPromptEl.value.trim();
+        if (!userPrompt) {
+            alert('Опишите курс для ИИ');
+            return;
+        }
+
+        const btn = this.container.querySelector('#generateWithAI');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Думаю...';
+
+        try {
+            // Получаем конфиг из глобального селектора
+            if (typeof window.createLLMClient === 'undefined') {
+                throw new Error('createLLMClient не инициализирован');
+            }
+            // Создаём клиент
+            const llmClient = window.createLLMClient();
+
+            // Формируем инструкции
+            const systemInstructions = `
+Ты — эксперт по созданию интерактивных тренингов для MindGym.
+Следуй строго методичке:
+
+${this.getGuide()}
+
+Верни ТОЛЬКО валидный JSON в формате MindGym, без пояснений, без markdown, без текста до/после.
+`.trim();
+
+            // Генерируем
+            const signal = AbortSignal.timeout(30000);
+            const rawResponse = await llmClient.generateCourse(userPrompt, systemInstructions, signal);
+
+            // Очищаем и парсим
+            const cleanJson = rawResponse
+                .replace(/^```json\s*/i, '')
+                .replace(/```$/, '')
+                .trim();
+
+            const newCourse = JSON.parse(cleanJson);
+            this.courseData = newCourse;
+            this.renderForm();
+            this.container.querySelector('#editorError').textContent = '✅ Курс сгенерирован!';
+
+        } catch (err) {
+            console.error('AI Generation error:', err);
+            this.container.querySelector('#editorError').textContent =
+                'Ошибка: ' + (err.message || 'проверьте консоль');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+
+    getGuide() {
+        return `
+## Структура курса
+Курс — это JSON с полями: metadata, modules, exercises.
+
+## metadata
+- title: краткое название (до 50 символов)
+- description: SEO-описание (до 160 символов)
+- version: "1.0"
+- validation_prompt: роль ИИ и критерии оценки (обязательно!)
+
+## modules
+Массив объектов:
+- id: уникальный строковый ID (например, "m1")
+- title: заголовок модуля
+- description: 1–2 предложения о чём модуль
+- order: число (1, 2, 3...)
+
+## exercises
+Массив объектов:
+- id: уникальный ID (например, "e1")
+- module_id: ссылка на модуль
+- prompt: контекст + вопрос (2–3 предложения)
+- expected_answer: короткий, разговорный, уникальный ответ (3–8 слов)
+- feedback_on_error: только разбор ошибки, без похвалы
+- difficulty: 1–4
+
+## Важно!
+- Все поля обязательны.
+- expected_answer должен быть уникальным для кейса.
+- feedback_on_error НЕ должен начинаться с "Верно", "Правильно", "Отлично".
+- Возвращай ТОЛЬКО JSON, без пояснений.
+`;
     }
 }

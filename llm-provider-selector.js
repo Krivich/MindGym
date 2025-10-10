@@ -120,9 +120,9 @@ export class LLMProviderSelector {
 
                 <span class="llm-placeholder" id="llmPlaceholder">http://localhost:11434</span>
 
-                <input type="text" class="llm-model-input" id="llmModelInput" placeholder="Имя модели" />
-                <input type="url" class="llm-url-input" id="llmUrlInput" placeholder="URL API" />
-                <input type="password" class="llm-key-input" id="llmKeyInput" placeholder="API Key" />
+                <input type="text" class="llm-model-input" id="llmModelInput" placeholder="Модель" />
+                <input type="url" class="llm-url-input" id="llmUrlInput" placeholder="URL" />
+                <input type="password" class="llm-key-input" id="llmKeyInput" placeholder="Токен" />
 
                 <a class="llm-help-link" id="llmHelpLink" target="_blank" title="Получить ключ">?</a>
                 <button class="llm-clear-btn" id="llmClearConfig" title="Очистить настройки">×</button>

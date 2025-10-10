@@ -29,18 +29,19 @@ export class DemoPlayer {
         this.container.innerHTML = `
   <h3 class="demo-title">Как это работает</h3>
   <div class="demo-chat-container">
-    <!-- Заголовок модуля -->
-    <div class="module-header">
-      <div class="module-divider"></div>
-      <div class="module-title">${this.log.module.title}</div>
-      <div class="module-description">${this.log.module.description}</div>
-      <div class="module-divider"></div>
+      <div class="chat-messages" id="demoChat_${Date.now()}">
+        <!-- Заголовок модуля теперь внутри чата -->
+        <div class="module-header">
+          <div class="module-divider"></div>
+          <div class="module-title">${this.log.module.title}</div>
+          <div class="module-description">${this.log.module.description}</div>
+          <div class="module-divider"></div>
+        </div>
+      </div>
+      <div class="chat-input demo-input">
+        <textarea class="demo-input-field" readonly></textarea>
+      </div>
     </div>
-    <div class="chat-messages" id="demoChat_${Date.now()}"></div>
-    <div class="chat-input demo-input">
-      <textarea class="demo-input-field" readonly></textarea>
-    </div>
-  </div>
   <div class="demo-overlay">
     <div class="play-icon">⏸️</div>
   </div>
