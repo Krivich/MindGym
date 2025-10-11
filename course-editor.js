@@ -33,8 +33,8 @@ export class CourseEditor {
 
     init() {
         this.container.innerHTML = `
-            <div class="editor-form" id="editorForm"></div>
             <div class="editor-ai" id="editorAiSection"></div>
+            <div class="editor-form" id="editorForm"></div>
             <div class="editor-actions-bottom" id="editorActionsBottom"></div>
         `;
         this.renderForm();
@@ -61,9 +61,10 @@ export class CourseEditor {
                 <textarea id="validationPrompt" class="editor-textarea required" rows="3" placeholder=" ">${this.escape(this.courseData.metadata.validation_prompt)}</textarea>
                 <label for="validationPrompt">Промпт для ИИ <span class="required-star">*</span></label>
             </div>
-
+            
             <div id="modulesContainer"></div>
-            <button class="editor-btn primary" id="addModule">+ Добавить модуль</button>
+            <button class="editor-btn primary" id="addModule">+ Модуль</button>
+            <button class="editor-btn" id="addModuleWithAI" hidden="hidden">+ Модуль ✨</button>
         `;
         this.renderModules();
     }
@@ -103,6 +104,8 @@ export class CourseEditor {
                 </div>
                 <div class="exercises-list" id="exercises_${module.id}"></div>
                 <button class="editor-btn" data-module-id="${module.id}">+ Упражнение</button>
+                <button class="editor-btn" data-module-id="${module.id}" id="addExerciseWithAI_${module.id}" hidden="hidden">+ Упражнение ✨</button>
+
             `;
             container.appendChild(moduleEl);
             this.renderExercises(module.id, exercises);
@@ -175,8 +178,7 @@ export class CourseEditor {
     }
 
     bindFormEvents() {
-        // ... (делегирование input и click — как в предыдущем ответе)
-        // Для краткости опущено, но в полной версии будет
+        // === Обработка ввода текста (без кнопок!) ===
         this.container.addEventListener('input', (e) => {
             const { target } = e;
             if (target.classList.contains('module-title-input')) {
@@ -194,17 +196,16 @@ export class CourseEditor {
             } else if (target.classList.contains('ex-feedback')) {
                 const ex = this.courseData.exercises.find(e => e.id === target.dataset.id);
                 if (ex) ex.feedback_on_error = target.value;
-            } else if (target.classList.contains('ex-difficulty')) {
-                const ex = this.courseData.exercises.find(e => e.id === target.dataset.id);
-                if (ex) ex.difficulty = parseInt(target.value);
             } else if (target.id === 'courseTitle') {
                 this.courseData.metadata.title = target.value;
             } else if (target.id === 'validationPrompt') {
                 this.courseData.metadata.validation_prompt = target.value;
             }
+            // ⚠️ УБРАНО: обработка кнопок из input!
         });
 
-        this.container.addEventListener('click', (e) => {
+        // === Обработка КЛИКОВ (включая кнопки ИИ) ===
+        this.container.addEventListener('click', async (e) => {
             if (e.target.id === 'addModule') {
                 const id = `m${Date.now()}`;
                 this.courseData.modules.push({
@@ -238,6 +239,45 @@ export class CourseEditor {
                     this.renderModules();
                 }
             }
+            // ✅ Кнопки ИИ — ТОЛЬКО здесь, с async/await
+            else if (e.target.id === 'addModuleWithAI') {
+                await this.addModuleWithAI();
+            } else if (e.target.id.startsWith('addExerciseWithAI_')) {
+                const moduleId = e.target.dataset.moduleId;
+                await this.addExerciseWithAI(moduleId);
+            }
+        });
+
+        // === Остальные обработчики (экспорт, импорт, запуск, генерация) ===
+        this.container.querySelector('#exportJson').addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify(this.courseData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${this.courseData.metadata.title.replace(/\s+/g, '_')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        this.container.querySelector('#importJson').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (ev) => {
+                const file = ev.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        this.courseData = JSON.parse(e.target.result);
+                        this.renderForm();
+                    } catch (err) {
+                        alert('Неверный JSON');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
         });
 
         // Экспорт
@@ -425,8 +465,15 @@ export class CourseEditor {
 
         const btn = this.container.querySelector('#generateWithAI');
         const originalText = btn.textContent;
+        let timeLeft = 120; // 120 секунд
         btn.disabled = true;
-        btn.textContent = 'Думаю...';
+        btn.innerHTML = `Думаю... (${timeLeft}s)`;
+
+        const timer = setInterval(() => {
+            timeLeft--;
+            btn.innerHTML = `Думаю... (${timeLeft}s)`;
+            if (timeLeft <= 0) clearInterval(timer);
+        }, 1000);
 
         try {
             // Получаем конфиг из глобального селектора
@@ -447,7 +494,7 @@ ${this.getGuide()}
 `.trim();
 
             // Генерируем
-            const signal = AbortSignal.timeout(30000);
+            const signal = AbortSignal.timeout(120000);
             const rawResponse = await llmClient.generateCourse(userPrompt, systemInstructions, signal);
 
             // Очищаем и парсим
@@ -468,6 +515,93 @@ ${this.getGuide()}
         } finally {
             btn.disabled = false;
             btn.textContent = originalText;
+
+            clearInterval(timer);
+        }
+    }
+
+    async addModuleWithAI() {
+        await this._generateAndInsert('module', null);
+    }
+
+    async addExerciseWithAI(moduleId) {
+        await this._generateAndInsert('exercise', moduleId);
+    }
+
+    async _generateAndInsert(type, moduleId = null) {
+        const btn = event?.currentTarget || document.activeElement;
+        if (!btn) return;
+
+        const originalText = btn.innerHTML;
+        let timeLeft = 120; // 120 секунд
+        btn.disabled = true;
+        btn.innerHTML = `Думаю... (${timeLeft}s)`;
+
+        const timer = setInterval(() => {
+            timeLeft--;
+            btn.innerHTML = `Думаю... (${timeLeft}s)`;
+            if (timeLeft <= 0) clearInterval(timer);
+        }, 1000);
+
+        try {
+            if (typeof window.createLLMClient === 'undefined') {
+                throw new Error('LLM не настроен');
+            }
+            const llmClient = window.createLLMClient();
+
+            // Формируем промпт
+            let systemInstructions, userPrompt;
+            if (type === 'module') {
+                systemInstructions = `
+Ты — эксперт по созданию курсов для MindGym.
+Создай ОДИН новый модуль в формате JSON:
+{
+  "id": "уникальный_строковый_id",
+  "title": "...",
+  "description": "...",
+  "order": ${this.courseData.modules.length + 1}
+}
+Верни ТОЛЬКО этот объект, без пояснений.
+`;
+                userPrompt = `Курс: "${this.courseData.metadata.title}". Добавь модуль на тему, связанную с курсом.`;
+            } else {
+                const module = this.courseData.modules.find(m => m.id === moduleId);
+                systemInstructions = `
+Ты — эксперт по созданию курсов для MindGym.
+Создай ОДНО новое упражнение в формате JSON:
+{
+  "id": "уникальный_строковый_id",
+  "module_id": "${moduleId}",
+  "prompt": "...",
+  "expected_answer": "...",
+  "feedback_on_error": "...",
+  "difficulty": 2
+}
+Верни ТОЛЬКО этот объект, без пояснений.
+`;
+                userPrompt = `Модуль: "${module.title}". Добавь упражнение по теме модуля.`;
+            }
+
+            const signal = AbortSignal.timeout(1200000); // 120 сек
+            const raw = await llmClient.generateCourse(userPrompt, systemInstructions, signal);
+            const clean = raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+            const newItem = JSON.parse(clean);
+
+            if (type === 'module') {
+                this.courseData.modules.push(newItem);
+            } else {
+                this.courseData.exercises.push(newItem);
+            }
+            this.renderForm();
+            this.container.querySelector('#editorError').textContent = `✅ ${type === 'module' ? 'Модуль' : 'Упражнение'} добавлено!`;
+
+        } catch (err) {
+            console.error(err);
+            this.container.querySelector('#editorError').textContent = `Ошибка: ${err.message}`;
+        } finally {
+            clearInterval(timer);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
         }
     }
 

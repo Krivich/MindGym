@@ -43,7 +43,7 @@ class LLMClient {
         return this.config.type === 'ollama';
     }
     // === Приватный метод: общий вызов LLM по messages ===
-    async _callLLM(messages, signal) {
+    async _callLLM(messages, signal, max_tokens=2000) {
         if (this.isLocal) {
             // Для Ollama: формируем промпт из messages
             let prompt = '';
@@ -88,7 +88,7 @@ class LLMClient {
             const res = await fetch(apiUrl, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ model, messages, temperature: 0.5, max_tokens: 2000 }),
+                body: JSON.stringify({ model, messages, temperature: 0.5, max_tokens: max_tokens }),
                 signal
             });
 
@@ -125,7 +125,7 @@ class LLMClient {
             { role: 'system', content: systemInstructions },
             { role: 'user', content: `Создай курс на основе описания:\n"${userPrompt}"` }
         ];
-        return await this._callLLM(messages, signal);
+        return await this._callLLM(messages, signal, 10000);
     }
 }
 
