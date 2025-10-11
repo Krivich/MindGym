@@ -120,9 +120,9 @@ export class LLMProviderSelector {
 
                 <span class="llm-placeholder" id="llmPlaceholder">http://localhost:11434</span>
 
-                <input type="text" class="llm-model-input" id="llmModelInput" placeholder="Модель" />
-                <input type="url" class="llm-url-input" id="llmUrlInput" placeholder="URL" />
-                <input type="password" class="llm-key-input" id="llmKeyInput" placeholder="Токен" />
+                <input type="text" class="llm-model-input required-field" id="llmModelInput" placeholder="Модель *" />
+                <input type="password" class="llm-key-input required-field" id="llmKeyInput" placeholder="Токен *" />
+                <input type="url" class="llm-url-input required-field" id="llmUrlInput" placeholder="URL *" />
 
                 <a class="llm-help-link" id="llmHelpLink" target="_blank" title="Получить ключ">?</a>
                 <button class="llm-clear-btn" id="llmClearConfig" title="Очистить настройки">×</button>
@@ -220,6 +220,46 @@ export class LLMProviderSelector {
             this.elements.help.hidden = false;
         } else {
             this.elements.help.hidden = true;
+        }
+
+        // === Валидация и подсветка ===
+        const isOllama = this.config.currentType === 'ollama';
+        const isCustom = this.config.currentType === 'custom';
+
+        // Сброс
+        this.container.querySelectorAll('.required-field').forEach(el => {
+            el.classList.remove('invalid');
+        });
+        this.container.querySelector('.llm-control')?.classList.remove('invalid');
+
+        // Проверка
+        let isValid = true;
+        if (isOllama) {
+            // Ollama: всё ок
+        } else if (isCustom) {
+            // Custom: обязателен URL
+            const urlInput = this.container.querySelector('.llm-url-input');
+            if (!this.config.current.url?.trim()) {
+                isValid = false;
+                urlInput?.classList.add('invalid');
+            }
+        } else {
+            // OpenRouter/OpenAI/Mistral: нужны модель и токен
+            const modelInput = this.container.querySelector('.llm-model-input');
+            const keyInput = this.container.querySelector('.llm-key-input');
+            if (!this.config.current.model?.trim()) {
+                isValid = false;
+                modelInput?.classList.add('invalid');
+            }
+            if (!this.config.current.key?.trim()) {
+                isValid = false;
+                keyInput?.classList.add('invalid');
+            }
+        }
+
+        // Градиент только если есть ошибка
+        if (!isValid) {
+            this.container.querySelector('.llm-control')?.classList.add('invalid');
         }
     }
 }

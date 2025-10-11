@@ -253,9 +253,16 @@ function startCourseSession(courseData, courseId, isLocal = false) {
         return;
     }
 
+
+    // ✅ Включаем режим чата
+    document.body.classList.add('chat-mode');
+
+    // Скрываем лендинг и демо (они всё равно скрыты через CSS, но можно и явно)
     landing.style.display = 'none';
     demoSection.style.display = 'none';
-    chatContainer.style.display = 'flex';
+
+    // Показываем чат
+    document.getElementById('chatWrapper').style.display = 'flex';
     chatMessages.innerHTML = '';
 
     core.loadCourse(courseData);
@@ -406,6 +413,7 @@ courseSelect.addEventListener('change', async (e) => {
     const value = e.target.value;
     if (value === '__create__') {
         courseEditor.show();
+        document.body.classList.remove('chat-mode');
         landing.style.display = 'none';
         chatContainer.style.display = 'none';
         demoSection.style.display = 'none';
@@ -584,6 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const course = localCourses.find(c => c.id === courseId);
             if (course) {
                 courseEditor.show();
+                document.body.classList.remove('chat-mode');
                 courseEditor.loadCourseData(course.data, courseId);
                 chatContainer.style.display = 'none';
                 landing.style.display = 'none';
@@ -614,9 +623,10 @@ const UNIVERSAL_DEMO_LOG = {
 };
 
 document.getElementById('appLogo').addEventListener('click', () => {
-    chatContainer.style.display = 'none';
+    document.body.classList.remove('chat-mode');
     landing.style.display = 'flex';
     demoSection.style.display = 'block';
+    document.getElementById('chatWrapper').style.display = 'none';
     chatMessages.innerHTML = '';
     courseSelect.selectedIndex = 0;
     updateMetaTags();

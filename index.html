@@ -21,6 +21,12 @@
     <meta property="og:url" content="https://krivich.github.io/MindGym/" />
     <meta property="og:type" content="website" />
     <link id="seo-alternate-placeholder" rel="alternate" href="#" />
+    <!--
+  💡 Идея: стили разделены по функциональным блокам (компонентам).
+  Каждый <style> отвечает за один аспект интерфейса.
+  Это упрощает рефакторинг, изоляцию и потенциальный вынос в отдельные файлы.
+-->
+
     <style>
         /* === 1. Общие переменные и сброс === */
         :root {
@@ -35,22 +41,22 @@
             --shadow: 0 10px 40px rgba(0,0,0,0.05);
             --focus-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
         }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
-            padding: 16px;
+            padding: 12px;
             font-size: 16px;
             line-height: 1.6;
         }
+    </style>
 
+    <style>
         /* === 2. Хедер и навигация === */
         .header {
             display: flex;
@@ -59,7 +65,6 @@
             margin-bottom: 24px;
             flex-wrap: wrap;
         }
-
         .app-title {
             font-weight: 700;
             font-size: 22px;
@@ -71,13 +76,11 @@
         .app-title:hover {
             color: #5a52d5;
         }
-
         .input-group {
             position: relative;
             flex: 1;
             min-width: 180px;
         }
-
         select, input {
             width: 100%;
             padding: 10px 14px;
@@ -101,7 +104,7 @@
             background-repeat: no-repeat;
             background-position: right 12px center;
             background-size: 12px;
-            padding-right: 36px; /* чтобы текст не налезал на стрелку */
+            padding-right: 36px;
         }
         .menu-btn {
             width: 36px;
@@ -123,7 +126,9 @@
             border-color: var(--primary);
             color: var(--primary);
         }
+    </style>
 
+    <style>
         /* === 3. Лендинг === */
         .landing {
             padding: 32px 16px;
@@ -187,7 +192,6 @@
         .open-source a:hover {
             text-decoration: underline;
         }
-
         .brain-bg {
             position: absolute;
             top: 0;
@@ -214,7 +218,9 @@
             0%, 100% { opacity: 0.04; transform: scale(1); }
             50% { opacity: 0.02; transform: scale(1.02); }
         }
+    </style>
 
+    <style>
         /* === 4. Демо-панель === */
         .demo-section {
             height: 50vh;
@@ -276,17 +282,82 @@
             color: var(--text);
             opacity: 0.7;
         }
+    </style>
+    <style>
+        /* === 10. Режим тренировки: flex-раскладка с фиксированным хедером и футером === */
+        /* В режиме чата: body становится flex-контейнером */
+        body.chat-mode {
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
 
-        /* === 5. Чат === */
+        /* Хедер остаётся в потоке, не скроллится */
+        body.chat-mode .header {
+            flex-shrink: 0;
+            z-index: 20; /* выше чата, если вдруг наложение */
+        }
+
+        /* Лендинг и демо скрываются */
+        body.chat-mode #landing,
+        body.chat-mode #demoSection {
+            display: none !important;
+        }
+
+        /* Чат-обёртка — теперь НЕ fixed, а flex-элемент */
+        body.chat-mode #chatWrapper {
+            display: flex !important;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            padding: 12px; /* как у body в обычном режиме */
+            background: var(--bg);
+        }
+
+        /* Контейнер чата — карточка */
+        body.chat-mode .chat-container {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            padding: 12px;
+        }
+
+        /* Сообщения — скроллятся внутри */
+        body.chat-mode .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 4px 0;
+            min-height: 0;
+        }
+
+        /* Поле ввода — фиксированная высота, не сжимается */
+        body.chat-mode .chat-input {
+            display: flex;
+            gap: 12px;
+            padding-top: 12px;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+    </style>
+    <style>
+        /* === 5. Чат (основной интерфейс тренировки) === */
         .chat-container {
             background: var(--card);
             border-radius: 16px;
             box-shadow: var(--shadow);
             display: flex;
             flex-direction: column;
+            flex: 1;
+            min-height: 0;
             padding: 12px;
-            margin-bottom: 16px;
-            max-height: 60vh;
         }
         .chat-messages {
             flex: 1;
@@ -295,6 +366,7 @@
             flex-direction: column;
             gap: 12px;
             padding: 4px 0;
+            min-height: 0;
         }
         .message {
             display: flex;
@@ -335,7 +407,6 @@
             font-size: 12px;
             color: var(--text-light);
         }
-
         /* Заголовок модуля */
         .module-header {
             text-align: center;
@@ -359,13 +430,13 @@
             margin: 10px auto;
             width: 60px;
         }
-
         /* Ввод ответа */
         .chat-input {
             display: flex;
             gap: 12px;
             padding-top: 12px;
             align-items: flex-end;
+            flex-shrink: 0;
         }
         .chat-input textarea {
             flex: 1;
@@ -404,7 +475,9 @@
             width: 18px;
             height: 18px;
         }
+    </style>
 
+    <style>
         /* === 6. Выбор LLM-провайдера === */
         .llm-control {
             position: relative;
@@ -468,7 +541,44 @@
         .llm-clear-btn:hover {
             color: var(--primary);
         }
+        /* Пульсирующая красная подсветка для незаполненного провайдера */
+        .llm-control.invalid {
+            position: relative;
+        }
+        .llm-control.invalid::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 14px;
+            background: conic-gradient(
+                    from 0deg,
+                    transparent,
+                    #ff4d4d,
+                    transparent,
+                    #ff4d4d,
+                    transparent
+            );
+            animation: pulseGlow 2s infinite;
+            z-index: -1;
+            pointer-events: none;
+        }
+        @keyframes pulseGlow {
+            0% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.03); opacity: 0.3; }
+            100% { transform: scale(1); opacity: 0.6; }
+        }
+        /* Красная рамка для незаполненного обязательного поля */
+        .llm-control .required-field.invalid {
+            border: 1px solid #ff4d4d !important;
+            box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.2) !important;
+            border-radius: 8px;
+        }
+    </style>
 
+    <style>
         /* === 7. Редактор курсов === */
         .editor-container {
             display: none;
@@ -491,13 +601,13 @@
         .editor-form,
         .editor-ai {
             background: white;
-            padding: 16px;
             border-radius: 16px;
         }
         .editor-ai {
             border: none;
             background: #f8f9ff;
             margin: 16px 0;
+            padding: 16px;
         }
         .editor-ai h3 {
             margin: 0 0 14px;
@@ -535,7 +645,6 @@
             pointer-events: none;
             transition: all 0.2s ease;
         }
-        /* Floating label: фокус или заполнено */
         .floating-input .editor-input:focus + label,
         .floating-input .editor-textarea:focus + label,
         .floating-input .editor-input:not(:focus):not(:placeholder-shown) + label,
@@ -546,7 +655,6 @@
             background: white;
             padding: 0 4px;
         }
-        /* Селекты: лейбл всегда сверху */
         .floating-input--select label {
             top: -10px;
             left: 8px;
@@ -576,15 +684,6 @@
             position: relative;
             overflow: visible;
         }
-        .module-header,
-        .exercise-header {
-            position: relative;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding-right: 32px;
-            margin-bottom: 12px;
-        }
         .remove-btn {
             position: absolute;
             top: -8px;
@@ -606,11 +705,6 @@
         .remove-btn:hover {
             color: #ff6b6b;
             transform: scale(1.15);
-        }
-        /* Селект сложности — занимает всю доступную ширину */
-        .exercise-header .floating-input--select {
-            flex: 1;
-            margin-right: 0;
         }
         .editor-btn {
             padding: 8px 14px;
@@ -652,7 +746,9 @@
             margin-top: 8px;
             text-align: center;
         }
+    </style>
 
+    <style>
         /* === 8. Меню действий с курсом === */
         .course-menu {
             position: absolute;
@@ -679,7 +775,9 @@
         .course-menu-item:hover {
             background: var(--card);
         }
+    </style>
 
+    <style>
         /* === 9. Адаптивность (мобильные устройства) === */
         @media (max-width: 768px) {
             body {
@@ -712,7 +810,6 @@
             .llm-provider-select {
                 max-width: none;
             }
-
             /* Лендинг */
             .landing {
                 padding: 20px 12px;
@@ -721,11 +818,15 @@
             .tagline {
                 font-size: 20px;
             }
-
             /* Чат */
-            .chat-container {
-                padding: 10px;
-                margin-bottom: 12px;
+            .chat-messages {
+                flex: 1;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                padding: 4px 0;
+                min-height: 0;
             }
             .message-bubble {
                 font-size: 14px;
@@ -740,7 +841,6 @@
                 width: 44px;
                 height: 44px;
             }
-
             /* Редактор */
             .editor-container {
                 padding: 12px;
@@ -841,16 +941,18 @@
 </div>
 
 <!-- Чат -->
-<div class="chat-container" id="chatContainer" style="display: none;">
-    <div class="chat-messages" id="chatMessages"></div>
-    <div class="chat-input">
-        <textarea id="userInput" placeholder="Ваш ответ..."></textarea>
-        <button class="send-btn" id="sendBtn" disabled>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M22 2L11 13" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        </button>
+<div class="chat-wrapper" id="chatWrapper" style="display: none;">
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <textarea id="userInput" placeholder="Ваш ответ..."></textarea>
+            <button class="send-btn" id="sendBtn" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M22 2L11 13" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
     </div>
 </div>
 
