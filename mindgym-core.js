@@ -1,4 +1,4 @@
-class MindGymCore {
+export class MindGymCore {
     constructor() {
         this.course = null;
         this.currentModuleId = null;

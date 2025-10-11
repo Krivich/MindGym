@@ -627,14 +627,15 @@
             font-family: 'Inter', sans-serif;
             font-size: 14px;
             background: white;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.2s; /* Убран box-shadow из transition */
         }
+        /* 🔥 УБРАНО СВЕЧЕНИЕ ПРИ ФОКУСЕ — только смена цвета рамки */
         .floating-input .editor-input:focus,
         .floating-input .editor-textarea:focus,
         .floating-input .editor-select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: var(--focus-shadow);
+            /* box-shadow: var(--focus-shadow); ← ПОЛНОСТЬЮ УДАЛЕНО */
         }
         .floating-input label {
             position: absolute;
@@ -645,6 +646,7 @@
             pointer-events: none;
             transition: all 0.2s ease;
         }
+        /* 🔑 Floating label: белый фон ТОЛЬКО в нижней половине */
         .floating-input .editor-input:focus + label,
         .floating-input .editor-textarea:focus + label,
         .floating-input .editor-input:not(:focus):not(:placeholder-shown) + label,
@@ -652,18 +654,18 @@
             top: -10px;
             left: 8px;
             font-size: 12px;
-            background: white;
+            background: linear-gradient(to top, white 50%, transparent 50%);
             padding: 0 4px;
         }
         .floating-input--select label {
             top: -10px;
             left: 8px;
             font-size: 12px;
-            background: white;
+            background: linear-gradient(to top, white 50%, transparent 50%);
             padding: 0 4px;
         }
         .floating-input--select .editor-select {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+            background-image: url("image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
             background-repeat: no-repeat;
             background-position: right 10px center;
             background-size: 12px;
@@ -735,7 +737,7 @@
         .floating-input.invalid .editor-textarea,
         .floating-input.invalid .editor-select {
             border-color: #e53935 !important;
-            box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.2) !important;
+            /* Свечение тоже убрано даже при ошибке */
         }
         .floating-input.invalid label {
             color: #e53935 !important;
@@ -745,6 +747,15 @@
             font-size: 14px;
             margin-top: 8px;
             text-align: center;
+        }
+
+        /* === Улучшенная textarea: больше отступов и авто-высота === */
+        .floating-input .editor-textarea {
+            padding: 16px 12px; /* ↑ больше воздуха сверху и снизу */
+            min-height: calc(1lh + 32px);
+            max-height: 150px;
+            resize: none;
+            overflow-y: hidden;
         }
     </style>
 
@@ -959,7 +970,7 @@
 <!-- Course Editor -->
 <div class="editor-container" id="courseEditorContainer"></div>
 
-<script src="mindgym-core.js"></script>
+<script type="module" src="mindgym-core.js"></script>
 <script type="module" src="mindgym-web.js"></script>
 <script type="module" src="llm-provider-selector.js"></script>
 </body>
